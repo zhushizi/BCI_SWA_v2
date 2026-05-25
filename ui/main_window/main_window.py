@@ -294,7 +294,6 @@ class MainWindow(QWidget):
         # 用户可能在对话框中取消，此时不进入评估页
         if not getattr(self, "_selected_patient", None):
             return
-        self._nav.switch_treat_tab_to_first()
         if self.treat_controller:
             self.treat_controller.enter_evaluate_page()
 
