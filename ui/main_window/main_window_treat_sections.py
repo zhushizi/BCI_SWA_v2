@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Optional
 from datetime import datetime
 
-from PySide6.QtCore import QObject, QEvent, QRect, Qt, QTimer
+from PySide6.QtCore import QObject, QEvent, Qt, QTimer
 from PySide6.QtGui import QMovie
 from PySide6.QtWidgets import QLabel
 
@@ -956,23 +956,3 @@ class TreatNavigation:
                 evalresult_label.setText("")
             self._reset_neu_threshold_spinboxes()
             self._set_neu_tab_initial_state()
-            self.update_preprocess_title("preprocess_neueval.png")
-        elif tab_name == "tab_4":
-            self.update_preprocess_title("preprocess_bciImpeTitle.png")
-        elif tab_name == "tab_3":
-            self.update_preprocess_title("preprocess_eletitle.png")
-
-    def update_preprocess_title(self, image_name: str) -> None:
-        label = get_ui_attr(self.ui, "label_title")
-        if label is None:
-            return
-        if image_name == "preprocess_bciImpeTitle.png":
-            x, y, w, h = 784, 20, 333, 59
-        elif image_name == "preprocess_neueval.png":
-            x, y, w, h = 720, 20, 540, 59
-        else:
-            x, y, w, h = 520, 20, 840, 59
-        label.setGeometry(QRect(x, y, w, h))
-        label.setMinimumSize(w, h)
-        label.setMaximumSize(w, h)
-        label.setStyleSheet(f"border-image: url(:/preprocess/pic/{image_name});")

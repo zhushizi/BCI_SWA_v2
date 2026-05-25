@@ -633,7 +633,6 @@ class MainWindowTreatFlow:
         if label_title is None:
             return
         label_title.setText("训练中")
-        label_title.setStyleSheet("")
 
 
 class _HoverShadowFilter(QObject):

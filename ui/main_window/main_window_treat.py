@@ -166,10 +166,6 @@ class TreatPageController:
         """子级 tab 切换时，进入训练主屏刷新信息"""
         self._nav.on_sub_tab_changed(index)
 
-    def _update_preprocess_title(self, image_name: str) -> None:
-        """根据子页更新标题背景与位置"""
-        self._nav.update_preprocess_title(image_name)
-
     def _confirm_exit_if_session_active(self) -> bool:
         return self._session_guard.confirm_exit_if_session_active()
 
