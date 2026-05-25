@@ -6,13 +6,13 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt, QRect, QTimer, QObject, QEvent
+from PySide6.QtCore import Qt, QRect, QSize, QTimer, QObject, QEvent
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QMessageBox, QGraphicsDropShadowEffect
+from PySide6.QtWidgets import QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QWidget
 
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
-from ui.dialogs.patient_select import PatientSelectDialog
 from ui.dialogs.tips_dialog import TipsDialog
+from ui.main_window.patient_select_panel import PatientSelectPanel
 
 
 class MainWindowNavigation:
@@ -39,9 +39,10 @@ class MainWindowNavigation:
         tab_main = get_ui_attr(self.ui, "tabWidget_main")
         if tab_main:
             safe_call(self.logger, tab_main.tabBar().hide)
+            safe_connect(self.logger, getattr(tab_main, "currentChanged", None), lambda _: self._update_line2_visibility())
 
     def init_ui(self) -> None:
-        self._host.setWindowTitle("BCI硬件控制系统")
+        self._host.setWindowTitle("非侵入式脑机接口吞咽神经和肌肉电刺激系统")
         tab_widget = get_ui_attr(self.ui, "tabWidget")
         if tab_widget:
             tab_widget.setCurrentIndex(0)
@@ -55,6 +56,8 @@ class MainWindowNavigation:
             tab_main.setCurrentIndex(0)
         label_patient = get_ui_attr(self.ui, "label_patient")
         safe_call(self.logger, getattr(label_patient, "setAlignment", None), Qt.AlignCenter)
+        self._host._treat_flow.refresh_patient_select_panel()
+        self._update_line2_visibility()
 
     def switch_tab(self, tab_index: int) -> None:
         tab_widget = get_ui_attr(self.ui, "tabWidget")
@@ -65,8 +68,11 @@ class MainWindowNavigation:
         if 0 <= tab_index < tab_widget.count():
             tab_widget.setCurrentIndex(tab_index)
             self._host._current_tab_index = tab_index
+            self._update_line2_visibility()
             self.update_button_states()
-            if tab_index == 1:
+            if tab_index == 0:
+                self._host._treat_flow.refresh_patient_select_panel()
+            elif tab_index == 1:
                 self._host.patient_controller.refresh()
             elif tab_index == 2:
                 self._host.plan_controller.refresh()
@@ -76,10 +82,13 @@ class MainWindowNavigation:
     def on_tab_changed(self, index: int) -> None:
         previous_index = getattr(self._host, "_current_tab_index", 0)
         self._host._current_tab_index = index
+        self._update_line2_visibility()
         if previous_index == 0 and index != 0:
             self._host.treat_controller.on_exit_treat_page()
         self.update_button_states()
-        if index == 1:
+        if index == 0:
+            self._host._treat_flow.refresh_patient_select_panel()
+        elif index == 1:
             self._host.patient_controller.refresh()
         elif index == 2:
             self._host.plan_controller.refresh()
@@ -94,7 +103,23 @@ class MainWindowNavigation:
         if tab_main:
             tab_main.setCurrentIndex(0)
         self._host._current_tab_index = 0
+        self._update_line2_visibility()
         self.update_button_states()
+        self._host._treat_flow.refresh_patient_select_panel()
+
+    def _update_line2_visibility(self) -> None:
+        line_2 = get_ui_attr(self.ui, "line_2")
+        if line_2 is None:
+            return
+        tab_widget_main = get_ui_attr(self.ui, "tabWidget_main")
+        tab_2 = get_ui_attr(self.ui, "tab_2")
+        in_preprocess_page = False
+        if tab_widget_main is not None and tab_2 is not None:
+            try:
+                in_preprocess_page = tab_widget_main.currentWidget() is tab_2
+            except Exception:
+                in_preprocess_page = False
+        safe_call(self.logger, getattr(line_2, "setVisible", None), not in_preprocess_page)
 
     def update_button_states(self) -> None:
         button_configs = [
@@ -116,11 +141,22 @@ class MainWindowNavigation:
                 f"}}"
             )
 
+        report_btn = get_ui_attr(self.ui, "pushButton_report")
+        safe_call(self.logger, getattr(report_btn, "hide", None))
+
 
 class MainWindowUserInfo:
     def __init__(self, host):
         self._host = host
         self.ui = host.ui
+
+    def bind(self) -> None:
+        btn_confirm = get_ui_attr(self.ui, "pushButton_other_confirm")
+        safe_connect(
+            self._host.logger,
+            getattr(btn_confirm, "clicked", None),
+            self._on_other_confirm,
+        )
 
     def get_first_char(self, text: str) -> str:
         if not text:
@@ -155,13 +191,42 @@ class MainWindowUserInfo:
         label_title = get_ui_attr(self.ui, "label_usertitle")
         safe_call(self._host.logger, getattr(label_title, "setText", None), user_title)
 
+    def init_org_info(self) -> None:
+        config_app = getattr(self._host, "config_app", None)
+        if not config_app:
+            return
+        hospital = str(config_app.get("hospital_name", "") or "").strip()
+        department = str(config_app.get("department_name", "") or "").strip()
+        hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
+        hospital_label = get_ui_attr(self.ui, "label_hosipital")
+        if hospital_edit:
+            safe_call(self._host.logger, getattr(hospital_edit, "setText", None), hospital)
+        if hospital_label:
+            safe_call(self._host.logger, getattr(hospital_label, "setText", None), hospital)
+        department_edit = get_ui_attr(self.ui, "lineEdit_department_name")
+        department_label = get_ui_attr(self.ui, "label_department")
+        if department_edit:
+            safe_call(self._host.logger, getattr(department_edit, "setText", None), department)
+        if department_label:
+            safe_call(self._host.logger, getattr(department_label, "setText", None), department)
+
+    def _on_other_confirm(self) -> None:
+        config_app = getattr(self._host, "config_app", None)
+        if not config_app:
+            return
+        hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
+        department_edit = get_ui_attr(self.ui, "lineEdit_department_name")
+        hospital = hospital_edit.text().strip() if hospital_edit else ""
+        department = department_edit.text().strip() if department_edit else ""
+        if not config_app.update({"hospital_name": hospital, "department_name": department}):
+            self._host.logger.warning("保存医院/科室配置失败")
+
 
 class MainWindowDeviceStatus:
     def __init__(self, host):
         self._host = host
         self.ui = host.ui
         self._ws_timer: Optional[QTimer] = None
-        self._pingpong_alive: bool = True  # 供 is_pingpong_online 使用
 
     def init_device_status(self) -> None:
         label_pingpong = get_ui_attr(self.ui, "label_pingpong")
@@ -197,11 +262,12 @@ class MainWindowDeviceStatus:
         label_pingpong = get_ui_attr(self.ui, "label_pingpong")
         if label_pingpong is None:
             return
-        self._pingpong_alive = is_alive
         if is_alive:
             label_pingpong.setStyleSheet("border-image: url(:/main/pic/main_pingpong_on.png);")
+            label_pingpong.setToolTip("心跳正常")
         else:
             label_pingpong.setStyleSheet("border-image: url(:/main/pic/main_pingpong_off.png);")
+            label_pingpong.setToolTip("心跳超时")
 
     def _init_ws_status(self) -> None:
         self._set_wifi_indicator(False)
@@ -229,15 +295,23 @@ class MainWindowDeviceStatus:
             return
         if is_connected:
             label_wifi.setStyleSheet("border-image: url(:/main/pic/main_wifi_on.png);")
+            label_wifi.setToolTip("服务器连接正常")
         else:
             label_wifi.setStyleSheet("border-image: url(:/main/pic/main_wifi_off.png);")
+            label_wifi.setToolTip("服务器未连接")
 
     def on_pingpong_status_changed(self, is_alive: bool, last_seen_sec) -> None:
         self.set_pingpong_indicator(bool(is_alive))
         self.update_treat_controls_by_pingpong()
 
     def is_pingpong_online(self) -> bool:
-        return getattr(self, "_pingpong_alive", True)
+        label_pingpong = get_ui_attr(self.ui, "label_pingpong")
+        if label_pingpong is None:
+            return True
+        try:
+            return label_pingpong.toolTip() == "心跳正常"
+        except Exception:
+            return True
 
     def update_treat_controls_by_pingpong(self) -> None:
         try:
@@ -248,30 +322,63 @@ class MainWindowDeviceStatus:
             pass
 
 
+_PARADIGM_OVERLAY_LABELS = (
+    "label_23",
+    "label_24",
+    "label_25",
+    "label_ssvep_up_icon",
+    "label_ssmvep_up_icon",
+    "label_mi_up_icon",
+)
+
+_SWA_HIDDEN_PARADIGM_WIDGETS = (
+    "pushButton_down_ssvep",
+    "pushButton_down_ssmvep",
+    "pushButton_down_mi",
+    "pushButton_down_mix",
+    "pushButton_up_mix",
+    "label_27",
+    "label_28",
+    "label_29",
+    "label_ssvep_down_icon",
+    "label_ssmvep_down_icon",
+    "label_mi_down_icon",
+)
+
+_SWA_PARADIGM_BUTTONS = (
+    "pushButton_up_ssvep",
+    "pushButton_up_ssmvep",
+    "pushButton_up_mi",
+)
+
+
 class MainWindowTreatFlow:
     def __init__(self, host):
         self._host = host
         self.ui = host.ui
         self.logger = host.logger
         self._hover_filters: list[_HoverShadowFilter] = []
+        self._patient_select_panel: Optional[PatientSelectPanel] = None
+        self._paradigm_icon_rects: dict[str, QRect] = {}
 
     def bind(self) -> None:
         def connect_click(name: str, slot: Callable[[], None]) -> None:
             button = get_ui_attr(self.ui, name)
             safe_connect(self.logger, getattr(button, "clicked", None), slot)
 
+        self._ensure_patient_select_panel()
         connect_click("pushButton_tab1select", self.open_patient_select_dialog)
+        self._hide_unused_paradigm_widgets()
+        self._set_paradigm_overlays_mouse_transparent()
 
-        treat_buttons = [
-            "pushButton_up_ssvep",
-            "pushButton_up_ssmvep",
-            "pushButton_up_mi",
-            "pushButton_up_mix",
-        ]
+        treat_buttons = list(_SWA_PARADIGM_BUTTONS)
         for button_name in treat_buttons:
             button = get_ui_attr(self.ui, button_name)
             if button:
-                self._attach_hover_shadow(button)
+                self._attach_hover_shadow(
+                    button,
+                    lambda hovered, name=button_name: self._set_paradigm_label_hovered(name, hovered),
+                )
                 safe_connect(
                     self.logger,
                     getattr(button, "clicked", None),
@@ -284,22 +391,103 @@ class MainWindowTreatFlow:
         start_evaluate_btn = get_ui_attr(self.ui, "pushButton_startevaluate")
         safe_connect(self.logger, getattr(start_evaluate_btn, "clicked", None), self.on_start_evaluate_clicked)
 
-    def _attach_hover_shadow(self, button) -> None:
+    def _hide_unused_paradigm_widgets(self) -> None:
+        tab_treat = get_ui_attr(self.ui, "tab_treat")
+        if tab_treat is None:
+            return
+        for name in _SWA_HIDDEN_PARADIGM_WIDGETS:
+            widget = tab_treat.findChild(QWidget, name)
+            if widget is not None:
+                safe_call(self.logger, getattr(widget, "hide", None))
+
+    def _set_paradigm_overlays_mouse_transparent(self) -> None:
+        for name in _PARADIGM_OVERLAY_LABELS:
+            label = get_ui_attr(self.ui, name)
+            if label is not None:
+                label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+
+    def _ensure_patient_select_panel(self) -> None:
+        if self._patient_select_panel is not None:
+            return
+
+        container = get_ui_attr(self.ui, "widget_patient_select")
+        if container is None:
+            return
+
+        layout = container.layout()
+        if layout is None:
+            layout = QVBoxLayout(container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(0)
+
+        self._patient_select_panel = PatientSelectPanel(
+            patient_app=self._host.patient_app,
+            parent=container,
+            logger=self.logger,
+        )
+        layout.addWidget(self._patient_select_panel)
+        safe_connect(self.logger, self._patient_select_panel.patient_selected, self.on_patient_selected)
+
+    def _attach_hover_shadow(self, button, on_hover_changed: Optional[Callable[[bool], None]] = None) -> None:
         effect = QGraphicsDropShadowEffect(button)
         effect.setBlurRadius(18)
         effect.setOffset(0, 0)
-        effect.setColor(QColor(0, 0, 0, 90))
+        effect.setColor(QColor(0, 0, 0, 45))
         effect.setEnabled(False)
         button.setGraphicsEffect(effect)
-        hover_filter = _HoverShadowFilter(button, effect)
+        hover_filter = _HoverShadowFilter(button, effect, on_hover_changed=on_hover_changed)
         button.installEventFilter(hover_filter)
         self._hover_filters.append(hover_filter)
 
+    def _set_paradigm_label_hovered(self, button_name: str, hovered: bool) -> None:
+        label_map = {
+            "pushButton_up_ssvep": "label_23",
+            "pushButton_up_ssmvep": "label_24",
+            "pushButton_up_mi": "label_25",
+        }
+        label = get_ui_attr(self.ui, label_map.get(button_name, ""))
+        if label is None:
+            return
+        color = "rgb(88, 122, 244)" if hovered else "rgb(31, 31, 31)"
+        safe_call(self.logger, getattr(label, "setStyleSheet", None), f"color: {color};")
+        self._set_paradigm_icon_hovered(button_name, hovered)
+
+    def _set_paradigm_icon_hovered(self, button_name: str, hovered: bool) -> None:
+        icon_map = {
+            "pushButton_up_ssvep": "label_ssvep_up_icon",
+            "pushButton_up_ssmvep": "label_ssmvep_up_icon",
+            "pushButton_up_mi": "label_mi_up_icon",
+        }
+        icon_name = icon_map.get(button_name)
+        if not icon_name:
+            return
+        icon_label = get_ui_attr(self.ui, icon_name)
+        if icon_label is None:
+            return
+
+        if icon_name not in self._paradigm_icon_rects:
+            self._paradigm_icon_rects[icon_name] = icon_label.geometry()
+        base_rect = self._paradigm_icon_rects[icon_name]
+
+        if not hovered:
+            icon_label.setGeometry(base_rect)
+            return
+
+        scale = 1.1
+        new_w = int(round(base_rect.width() * scale))
+        new_h = int(round(base_rect.height() * scale))
+        # 用浮点中心点计算，避免 QRect.center() 在偶数尺寸时向左上偏 1px
+        center_x = base_rect.x() + base_rect.width() / 2.0
+        center_y = base_rect.y() + base_rect.height() / 2.0
+        new_x = int(round(center_x - new_w / 2.0))
+        new_y = int(round(center_y - new_h / 2.0))
+        icon_label.setGeometry(new_x, new_y, new_w, new_h)
+
 
     def open_patient_select_dialog(self) -> None:
-        dialog = PatientSelectDialog(self._host, self._host.patient_app)
-        dialog.patient_selected.connect(self.on_patient_selected)
-        dialog.exec()
+        self.refresh_patient_select_panel()
+        if self._patient_select_panel:
+            self._patient_select_panel.focus_search()
 
     def on_patient_selected(self, patient: dict) -> None:
         patient_name = patient.get("Name", "")
@@ -309,8 +497,40 @@ class MainWindowTreatFlow:
         else:
             label_fallback = get_ui_attr(self.ui, "label_11")
             safe_call(self.logger, getattr(label_fallback, "setText", None), patient_name)
+        self._fill_patient_info_labels(patient)
         self._host._selected_patient = patient
+        if self._patient_select_panel:
+            self._patient_select_panel.refresh_patients(selected_patient=patient)
         self._host.treat_controller.set_current_patient(patient)
+
+    def refresh_patient_select_panel(self) -> None:
+        self._ensure_patient_select_panel()
+        if self._patient_select_panel:
+            self._patient_select_panel.refresh_patients(selected_patient=self._host._selected_patient)
+
+    def clear_patient_selection(self) -> None:
+        if self._patient_select_panel:
+            self._patient_select_panel.set_selected_patient(None)
+        self._fill_patient_info_labels(None)
+
+    def parse_treat_button_info(self, button_name: str) -> tuple[str, str, str]:
+        app = getattr(self._host, "treat_flow_app", None)
+        if app and hasattr(app, "parse_treat_button_info"):
+            return app.parse_treat_button_info(button_name)
+        return "", "", ""
+
+    def send_impedance_close(self) -> None:
+        app = getattr(self._host, "treat_flow_app", None)
+        if app and hasattr(app, "send_impedance_close"):
+            app.send_impedance_close()
+
+    @staticmethod
+    def extract_patient_id(patient: dict | None) -> str | None:
+        if not patient:
+            return None
+        pid = patient.get("PatientId") or patient.get("Name") or ""
+        pid = str(pid).strip()
+        return pid or None
 
     def open_treat_page(self, button_name: str | None = None) -> None:
         if not self._host._selected_patient:
@@ -320,6 +540,43 @@ class MainWindowTreatFlow:
             self._host.treat_flow_app.start_treat_from_button(self._host._selected_patient, button_name)
         self._host.treat_controller.set_current_patient(self._host._selected_patient)
         self._host.treat_controller.enter_stim_page()
+
+    def _fill_patient_info_labels(self, patient: dict | None) -> None:
+        patient = patient or {}
+
+        def _txt(value) -> str:
+            text = str(value or "").strip()
+            return text if text else "--"
+
+        def _birthday_text() -> str:
+            for key in ("Birthday", "BirthDay", "birth_day", "birthdate"):
+                value = patient.get(key)
+                if value not in (None, ""):
+                    return _txt(value)
+            return "--"
+
+        def _height_weight_text() -> str:
+            height = _txt(patient.get("Height")) if patient.get("Height") not in (None, "") else ""
+            weight = _txt(patient.get("Weight")) if patient.get("Weight") not in (None, "") else ""
+            if height and weight:
+                return f"{height}/{weight}"
+            if height:
+                return height
+            if weight:
+                return weight
+            return "--"
+
+        label_values = {
+            "label_patient_id": _txt(patient.get("PatientId")),
+            "label_sex": _txt(patient.get("Sex")),
+            "label_birthday": _birthday_text(),
+            "label_height_weight": _height_weight_text(),
+            "label_visit_time": _txt(patient.get("VisitTime")).replace("/", "-"),
+            "label_age": _txt(patient.get("Age")),
+        }
+        for label_name, text in label_values.items():
+            label = get_ui_attr(self.ui, label_name)
+            safe_call(self.logger, getattr(label, "setText", None), f"  {text}")
 
     def start_treatment_both_channels(self) -> None:
         try:
@@ -351,15 +608,7 @@ class MainWindowTreatFlow:
         #         pass
         tab_widget2 = get_ui_attr(self.ui, "tabWidget_2")
         if tab_widget2:
-            tab_5 = get_ui_attr(self.ui, "tab_5")
-            if tab_5 is not None:
-                idx = tab_widget2.indexOf(tab_5)
-                if idx >= 0:
-                    tab_widget2.setCurrentIndex(idx)
-                else:
-                    tab_widget2.setCurrentIndex(2)
-            else:
-                tab_widget2.setCurrentIndex(2)
+            tab_widget2.setCurrentIndex(2)
         try:
             if self._host.treat_controller and self._host.treat_controller.training_sub_ctrl:
                 self._host.treat_controller.training_sub_ctrl.start_paradigm_service(
@@ -370,30 +619,34 @@ class MainWindowTreatFlow:
             pass
         self.update_title_to_practising()
 
-    def update_title_to_practising(self, x: int = None, y: int = None, width: int = None, height: int = None) -> None:
+    def update_title_to_practising(self) -> None:
         label_title = get_ui_attr(self.ui, "label_title")
         if label_title is None:
             return
-        default_x = 860 if x is None else x
-        default_y = 20 if y is None else y
-        default_width = 270 if width is None else width
-        default_height = 59 if height is None else height
-        label_title.setGeometry(QRect(default_x, default_y, default_width, default_height))
-        label_title.setMinimumSize(default_width, default_height)
-        label_title.setMaximumSize(default_width, default_height)
-        label_title.setStyleSheet("border-image: url(:/treat/pic/treat_practising.png);")
+        label_title.setText("训练中")
+        label_title.setStyleSheet("")
 
 
 class _HoverShadowFilter(QObject):
-    def __init__(self, target, effect: QGraphicsDropShadowEffect):
+    def __init__(
+        self,
+        target,
+        effect: QGraphicsDropShadowEffect,
+        on_hover_changed: Optional[Callable[[bool], None]] = None,
+    ):
         super().__init__(target)
         self._target = target
         self._effect = effect
+        self._on_hover_changed = on_hover_changed
 
     def eventFilter(self, obj, event):
         if obj is self._target:
             if event.type() == QEvent.Enter:
                 self._effect.setEnabled(True)
+                if callable(self._on_hover_changed):
+                    self._on_hover_changed(True)
             elif event.type() == QEvent.Leave:
                 self._effect.setEnabled(False)
+                if callable(self._on_hover_changed):
+                    self._on_hover_changed(False)
         return super().eventFilter(obj, event)

@@ -3,7 +3,6 @@
     
     <!-- 登录界面图片资源 -->
     <qresource prefix="/login">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/login_account.png</file>
         <file>pic/login_background.png</file>
         <file>pic/login_HW.png</file>
@@ -16,12 +15,12 @@
         <file>pic/login_welcome.png</file>
         <file>pic/login_checked.png</file>
         <file>pic/login_pwdopen.png</file>
+        <file>pic/login_zenith.png</file>
         <file>pic/logo_zenith.png</file>
     </qresource>
     
     <!-- 主界面图片资源 -->
     <qresource prefix="/main">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/main_background.png</file>
         <file>pic/main_BCI.png</file>
         <file>pic/main_logo.png</file>
@@ -64,12 +63,9 @@
         <file>pic/main_color.png</file>
         <file>pic/main_tips.png</file>
         <file>pic/main_tips_logo.png</file>
-
     </qresource>
 
-    <!-- 主界面图片资源 -->
     <qresource prefix="/treat">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/treat_BCI_off.png</file>
         <file>pic/treat_home.png</file>
         <file>pic/treat_new.png</file>
@@ -88,12 +84,12 @@
         <file>pic/treat_shut.png</file>
         <file>pic/treat_pause.png</file>
         <file>pic/treat_power_logo.png</file>
-        
+        <file>pic/treat_wave_logo.png</file>
+        <file>pic/treat_patient_touxiang.png</file>
+        <file>pic/combo_triangle_down.png</file>
     </qresource>
 
-    <!-- 主界面图片资源 -->
     <qresource prefix="/patient">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/patient_in.png</file>
         <file>pic/patient_new.png</file>
         <file>pic/patient_out.png</file>
@@ -104,13 +100,18 @@
         <file>pic/patient_recorddel.png</file>
         <file>pic/patient_title.png</file>
         <file>pic/patient_newa_logo.png</file>
+        <file>pic/patient_revise_logo.png</file>
         <file>pic/patient_select_logo.png</file>
         <file>pic/patient_select_close.png</file>
+        <file>pic/patient_icon_age.png</file>
+        <file>pic/patient_icon_birthday.png</file>
+        <file>pic/patient_icon_high_weight.png</file>
+        <file>pic/patient_icon_number.png</file>
+        <file>pic/patient_icon_sex.png</file>
+        <file>pic/patient_icon_treat_time.png</file>
     </qresource>
 
-    <!-- 主界面图片资源 -->
     <qresource prefix="/preprocess">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/preprocess_eletip.png</file>
         <file>pic/preprocess_eletitle.png</file>
         <file>pic/preprocess_eleTurnBig.png</file>
@@ -124,24 +125,25 @@
         <file>pic/preprocess_neueval.png</file>
     </qresource>
 
-    <!-- 主界面图片资源 -->
     <qresource prefix="/plan">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/plan_new.png</file>
     </qresource>
 
-    <!-- 主界面图片资源 -->
     <qresource prefix="/set">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/set_volumeshut.png</file>
         <file>pic/set_volumeopen.png</file>
         <file>pic/set_volumedown.png</file>
         <file>pic/set_volumeup.png</file>
+        <file>pic/icon_ssvep.png</file>
+        <file>pic/icon_ssmvep.png</file>
+        <file>pic/icon_mi.png</file>
+        <file>pic/big_icon.png</file>
+        <file>pic/stim_background.png</file>
         <file>pic/脑机接口-上下肢-21.png</file>
+        <file>pic/icon_hosipital.png</file>
     </qresource>
-    <!-- 主界面图片资源 -->
+
     <qresource prefix="/eval">
-        <!-- 文件路径：相对于 .qrc 的位置 -->
         <file>pic/eval_sharpwave.gif</file>
         <file>pic/eval_squarewave.gif</file>
     </qresource>

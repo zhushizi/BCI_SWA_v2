@@ -163,6 +163,7 @@ class MainWindow(QWidget):
         # 导航与治疗入口
         self._nav.bind()
         self._treat_flow.bind()
+        self._user_info.bind()
 
         # 登出
         button_logout = get_ui_attr(self.ui, "pushButton_logout")
@@ -240,6 +241,7 @@ class MainWindow(QWidget):
         self._nav.init_ui()
         self._update_button_states()
         self._init_device_status()
+        self._user_info.init_org_info()
 
         # 初始化各子页
         self.patient_controller.init_ui()
