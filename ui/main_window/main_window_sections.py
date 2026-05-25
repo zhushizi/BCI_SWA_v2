@@ -30,6 +30,7 @@ class MainWindowNavigation:
         connect_click("pushButton_patient", lambda: self.switch_tab(1))
         connect_click("pushButton_plan", lambda: self.switch_tab(2))
         connect_click("pushButton_set", lambda: self.switch_tab(3))
+        connect_click("pushButton_report", self._on_report_clicked)
         connect_click("pushButton_tab2home", self.switch_treat_tab_to_first)
 
         tab_widget = get_ui_attr(self.ui, "tabWidget")
@@ -43,6 +44,7 @@ class MainWindowNavigation:
 
     def init_ui(self) -> None:
         self._host.setWindowTitle("非侵入式脑机接口吞咽神经和肌肉电刺激系统")
+        self._host._report_selected = False
         tab_widget = get_ui_attr(self.ui, "tabWidget")
         if tab_widget:
             tab_widget.setCurrentIndex(0)
@@ -66,6 +68,7 @@ class MainWindowNavigation:
         if getattr(self._host, "_current_tab_index", 0) == 0 and tab_index != 0:
             self._host.treat_controller.on_exit_treat_page()
         if 0 <= tab_index < tab_widget.count():
+            self._host._report_selected = False
             tab_widget.setCurrentIndex(tab_index)
             self._host._current_tab_index = tab_index
             self._update_line2_visibility()
@@ -78,11 +81,15 @@ class MainWindowNavigation:
                 self._host.plan_controller.refresh()
             elif tab_index == 3:
                 self._host.set_controller.refresh()
+            elif tab_index == getattr(getattr(self._host, "report_controller", None), "REPORT_TAB_INDEX", -1):
+                self._host.report_controller.refresh()
 
     def on_tab_changed(self, index: int) -> None:
         previous_index = getattr(self._host, "_current_tab_index", 0)
         self._host._current_tab_index = index
         self._update_line2_visibility()
+        report_tab_index = getattr(getattr(self._host, "report_controller", None), "REPORT_TAB_INDEX", -1)
+        self._host._report_selected = index == report_tab_index
         if previous_index == 0 and index != 0:
             self._host.treat_controller.on_exit_treat_page()
         self.update_button_states()
@@ -94,6 +101,8 @@ class MainWindowNavigation:
             self._host.plan_controller.refresh()
         elif index == 3:
             self._host.set_controller.refresh()
+        elif index == report_tab_index:
+            self._host.report_controller.refresh()
 
     def switch_treat_tab_to_first(self) -> None:
         tab_widget = get_ui_attr(self.ui, "tabWidget")
@@ -103,6 +112,7 @@ class MainWindowNavigation:
         if tab_main:
             tab_main.setCurrentIndex(0)
         self._host._current_tab_index = 0
+        self._host._report_selected = False
         self._update_line2_visibility()
         self.update_button_states()
         self._host._treat_flow.refresh_patient_select_panel()
@@ -140,9 +150,33 @@ class MainWindowNavigation:
                 f"    border: none;"
                 f"}}"
             )
+        self._update_report_button_state(bool(getattr(self._host, "_report_selected", False)))
 
-        report_btn = get_ui_attr(self.ui, "pushButton_report")
-        safe_call(self.logger, getattr(report_btn, "hide", None))
+    def _on_report_clicked(self) -> None:
+        tab_widget = get_ui_attr(self.ui, "tabWidget")
+        report_tab_index = getattr(getattr(self._host, "report_controller", None), "REPORT_TAB_INDEX", -1)
+        if tab_widget is not None and 0 <= report_tab_index < tab_widget.count():
+            prev_index = getattr(self._host, "_current_tab_index", 0)
+            if prev_index == 0:
+                self._host.treat_controller.on_exit_treat_page()
+            self._host._report_selected = True
+            tab_widget.setCurrentIndex(report_tab_index)
+            self._host._current_tab_index = report_tab_index
+            self._host.report_controller.refresh()
+        self._update_report_button_state(True)
+
+    def _update_report_button_state(self, selected: bool) -> None:
+        button = get_ui_attr(self.ui, "pushButton_report")
+        if button is None:
+            return
+        image_name = "main_report_on.png" if selected else "main_report_off.png"
+        button.setStyleSheet(
+            "QPushButton#pushButton_report {"
+            f"    border-image: url(:/main/pic/{image_name});"
+            "    background: transparent;"
+            "    border: none;"
+            "}"
+        )
 
 
 class MainWindowUserInfo:

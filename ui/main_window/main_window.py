@@ -18,6 +18,7 @@ from ui.main_window.main_window_treat import TreatPageController
 from ui.main_window.main_window_patient import PatientPageController
 from ui.main_window.main_window_plan import PlanPageController
 from ui.main_window.main_window_set import SetPageController
+from ui.main_window.main_window_report import MainWindowReportPage
 from ui.main_window.main_window_sections import (
     MainWindowNavigation,
     MainWindowUserInfo,
@@ -152,6 +153,7 @@ class MainWindow(QWidget):
         self._user_info = MainWindowUserInfo(self)
         self._device_status = MainWindowDeviceStatus(self)
         self._treat_flow = MainWindowTreatFlow(self)
+        self.report_controller = MainWindowReportPage(self)
 
         self._setup_connections()
         self._init_ui()
@@ -274,6 +276,11 @@ class MainWindow(QWidget):
         self.patient_controller.init_ui()
         self.plan_controller.init_ui()
         self.set_controller.init_ui()
+        self.report_controller.init_ui()
+
+    def open_patient_treat_records(self, patient: dict) -> None:
+        """从患者管理等入口打开诊疗记录模块并定位到指定患者。"""
+        self.report_controller.open_for_patient(patient)
 
     def _switch_tab(self, tab_index: int):
         """切换顶级标签页 (0=治疗, 1=患者, 2=方案, 3=设置)"""
@@ -321,6 +328,42 @@ class MainWindow(QWidget):
 
     def _extract_patient_id(self, patient: dict | None) -> str | None:
         return self._treat_flow.extract_patient_id(patient)
+
+    def clear_treat_context_if_patient_removed(self, removed_patient_id: str) -> None:
+        """患者删除后，若删的是当前治疗选中患者，则清空治疗区与会话上下文。"""
+        rid = str(removed_patient_id or "").strip()
+        if not rid:
+            return
+        selected = self._selected_patient
+        if not selected:
+            return
+        sid = str(selected.get("PatientId") or selected.get("Name") or "").strip()
+        if sid != rid:
+            return
+
+        label_patient = get_ui_attr(self.ui, "label_patient")
+        if label_patient:
+            safe_call(self.logger, getattr(label_patient, "setText", None), "未选择患者")
+        self._selected_patient = None
+        try:
+            self._treat_flow.clear_patient_selection()
+        except Exception:
+            self.logger.exception("清空患者选择面板状态失败")
+
+        if self.session_app:
+            try:
+                cur = self.session_app.get_current_patient_id()
+                if str(cur or "").strip() == rid and self.session_app.has_active_session():
+                    self.session_app.end_session("patient_deleted")
+                self.session_app.set_current_patient("")
+            except Exception:
+                self.logger.exception("患者删除后清理会话状态失败")
+
+        if self.treat_controller:
+            try:
+                self.treat_controller.set_current_patient(None)
+            except Exception:
+                self.logger.exception("患者删除后清空治疗页患者失败")
 
     def _parse_treat_button_info(self, button_name: str) -> tuple[str, str, str]:
         return self._treat_flow.parse_treat_button_info(button_name)

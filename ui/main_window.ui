@@ -3043,6 +3043,69 @@ border-color: #C7D2FE;
        </widget>
       </widget>
      </widget>
+     <widget class="QWidget" name="tab_report">
+      <attribute name="title">
+       <string>Tab 5</string>
+      </attribute>
+      <widget class="QWidget" name="widget_patients_record" native="true">
+       <property name="geometry">
+        <rect>
+         <x>60</x>
+         <y>60</y>
+         <width>411</width>
+         <height>851</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QWidget" name="widget_patient_treat_record" native="true">
+       <property name="geometry">
+        <rect>
+         <x>560</x>
+         <y>60</y>
+         <width>1161</width>
+         <height>851</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_report_bg_left">
+       <property name="geometry">
+        <rect>
+         <x>30</x>
+         <y>30</y>
+         <width>471</width>
+         <height>911</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 10px;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_report_bg_right">
+       <property name="geometry">
+        <rect>
+         <x>530</x>
+         <y>30</y>
+         <width>1221</width>
+         <height>911</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 10px;</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <zorder>label_report_bg_right</zorder>
+      <zorder>label_report_bg_left</zorder>
+      <zorder>widget_patients_record</zorder>
+      <zorder>widget_patient_treat_record</zorder>
+     </widget>
     </widget>
     <widget class="QPushButton" name="pushButton_patient">
      <property name="geometry">

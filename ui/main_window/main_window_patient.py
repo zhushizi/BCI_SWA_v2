@@ -314,15 +314,11 @@ class PatientPageController(BaseTableController):
             TipsDialog.show_tips(self.parent, "患者病历号为空")
             return
 
-        dialog = TreatRecordDialog(
-            self.parent,
-            self.patient_app,
-            patient_id,
-            patient_name,
-            self.report_app,
-            session_app=getattr(self.parent, "session_app", None),
-        )
-        dialog.exec()
+        open_records = getattr(self.parent, "open_patient_treat_records", None)
+        if callable(open_records):
+            open_records(patient)
+            return
+        TipsDialog.show_tips(self.parent, "无法打开诊疗记录模块")
 
     def _on_edit_patient_clicked(self, row: int):
         if not self._patient_data or row >= len(self._patient_data):
