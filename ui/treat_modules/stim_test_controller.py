@@ -193,7 +193,7 @@ class StimTestController:
         QTimer.singleShot(0, lambda: self._apply_circle_mask_to_host(host))
 
     def _init_right_circle_widget(self) -> None:
-        """在 widget_circle_level_right 中放入只读圆环，与 label_stim_intensity 联动，并裁剪为圆形区域。"""
+        """在 widget_circle_level_right 中放入只读圆环（参考 HW 分段仪表盘样式）。"""
         host = get_ui_attr(self.ui, "widget_circle_level_right")
         if host is None:
             return
@@ -206,6 +206,10 @@ class StimTestController:
         self._right_circle_widget.set_read_only(True)
         self._right_circle_widget.set_level(self._get_right_grade())
         layout.addWidget(self._right_circle_widget)
+
+        label = get_ui_attr(self.ui, "label_stim_intensity")
+        if label is not None:
+            label.hide()
 
         host.installEventFilter(_CircleMaskResizeFilter(host))
         QTimer.singleShot(0, lambda: self._apply_circle_mask_to_host(host))
@@ -587,6 +591,8 @@ class StimTestController:
             self._left_circle_widget.set_level(grade)
 
     def _get_right_grade(self) -> int:
+        if self._right_circle_widget is not None:
+            return max(0, min(self._max_stim_grade, int(self._right_circle_widget.level())))
         label = get_ui_attr(self.ui, "label_stim_intensity")
         if label is None:
             return 0
@@ -598,11 +604,10 @@ class StimTestController:
             return 0
 
     def _set_right_grade(self, grade: int) -> None:
-        label = get_ui_attr(self.ui, "label_stim_intensity")
-        if label is None:
-            return
         grade = max(0, min(self._max_stim_grade, grade))
-        safe_call(self._logger, getattr(label, "setText", None), f"{grade}级")
+        label = get_ui_attr(self.ui, "label_stim_intensity")
+        if label is not None:
+            safe_call(self._logger, getattr(label, "setText", None), f"{grade}级")
         if self._right_circle_widget is not None:
             self._right_circle_widget.set_level(grade)
 
