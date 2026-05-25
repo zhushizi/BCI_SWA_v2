@@ -594,6 +594,19 @@ class MainWindowTreatFlow:
         except Exception as e:
             self.logger.error(f"发送治疗开始命令失败: {e}")
 
+    def _set_sub_tab_by_name(self, tab_name: str) -> bool:
+        sub_tab = get_ui_attr(self.ui, "tabWidget_2")
+        if sub_tab is None:
+            return False
+        target_tab = get_ui_attr(self.ui, tab_name)
+        if target_tab is None:
+            return False
+        index = sub_tab.indexOf(target_tab)
+        if index < 0:
+            return False
+        sub_tab.setCurrentIndex(index)
+        return True
+
     def on_start_evaluate_clicked(self) -> None:
         try:
             if self._host.treat_controller and self._host.treat_controller.impedance_ctrl:
@@ -615,9 +628,8 @@ class MainWindowTreatFlow:
         #         )
         #     except Exception:
         #         pass
-        tab_widget2 = get_ui_attr(self.ui, "tabWidget_2")
-        if tab_widget2:
-            tab_widget2.setCurrentIndex(2)
+        if not self._set_sub_tab_by_name("tab_5"):
+            self.logger.warning("切换到训练页 tab_5 失败")
         try:
             if self._host.treat_controller and self._host.treat_controller.training_sub_ctrl:
                 self._host.treat_controller.training_sub_ctrl.start_paradigm_service(

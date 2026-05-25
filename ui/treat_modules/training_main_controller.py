@@ -19,7 +19,7 @@ from PySide6.QtCore import QTimer, Qt, QObject, QEvent, QRect, QBuffer
 
 class TrainingMainController:
     """
-    训练模块主屏（tabWidget_2 index=2 / tab_5）。
+    训练模块主屏（tabWidget_2 / tab_5）。
 
     框架阶段：只负责 UI 交互 -> TrainingMainApp 的调用入口。
 
@@ -225,6 +225,7 @@ class TrainingMainController:
         if layout is None:
             layout = QVBoxLayout(host)
             layout.setContentsMargins(0, 0, 0, 0)
+        host.setStyleSheet("background-color: #FFFFFF;")
         self._wave_widget = BCIWaveWidget(host)
         self._wave_widget.set_draw_labels(False)
         layout.addWidget(self._wave_widget)

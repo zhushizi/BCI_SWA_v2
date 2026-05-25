@@ -23,10 +23,10 @@ class BCIWaveWidget(QWidget):
         self._sample_interval: float | None = None
         self._window_sec = 10.0
         self._max_points = 800
-        self._bg_color = QColor(10, 10, 10)
-        self._grid_color = QColor(40, 40, 40)
-        self._wave_color = QColor(0, 200, 255)
-        self._label_color = QColor(220, 220, 220)
+        self._bg_color = QColor("#FFFFFF")
+        self._grid_color = QColor("#E8E8E8")
+        self._wave_color = QColor("#789EFF")
+        self._label_color = QColor("#789EFF")
         self._draw_labels = True
         self._channel_labels: list[str] = []
         self._hidden_channel_indices: set[int] = set()
