@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QGuiApplication
+from ui.core.app_icon import apply_application_icon
 
 # 基础设施 & 服务层（组合根负责装配，业务层对下游透明）
 from infrastructure.data import DatabaseService
@@ -541,6 +542,7 @@ def main() -> None:
     args, _ = parser.parse_known_args()
 
     app = QApplication(sys.argv)
+    apply_application_icon(app)
     load_resources()
 
     websocket_exe_path = str(config_data.get("websocket_exe") or "").strip() or None

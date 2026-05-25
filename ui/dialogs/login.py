@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QWidget, QMessageBox, QLineEdit
 from PySide6.QtCore import Signal, QFile
 from PySide6.QtUiTools import QUiLoader
 
+from ui.core.app_icon import apply_window_icon
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
 from ui.dialogs.tips_dialog import TipsDialog
 
@@ -44,6 +45,7 @@ class LoginWindow(QWidget):
         if user_app is None:
             raise ValueError("user_app 参数不能为 None，必须通过 main.py 传入")
         self.user_app = user_app
+        apply_window_icon(self)
 
         password_input = get_ui_attr(self.ui, "lineEdit_upwd")
         safe_call(self._logger, getattr(password_input, "setEchoMode", None), QLineEdit.Password)
