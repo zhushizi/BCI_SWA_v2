@@ -1,0 +1,139 @@
+"""
+方案服务类 - 负责方案（EvaluationManager 表）的业务逻辑
+"""
+
+import logging
+from typing import List, Dict, Optional, Tuple, Any
+
+from infrastructure.data import DatabaseService
+from service.user._db_base import _DbBase
+
+
+class SchemeService(_DbBase):
+    """方案服务类"""
+
+    TABLE_SCHEME = "EvaluationManager"
+
+    def __init__(self, db_service: DatabaseService):
+        super().__init__(db_service)
+        self.logger = logging.getLogger(__name__)
+        self._scheme_fields = (
+            "rowid AS SchemeId",
+            "EvaluationID",
+            "Threshold1",
+            "Threshold2",
+            "Alpha",
+            "EvaluationTime",
+            "EvaluationResult",
+            "PatientID",
+        )
+
+    def _scheme_select_sql(self) -> str:
+        fields = ", ".join(self._scheme_fields)
+        return f"SELECT {fields} FROM {self.TABLE_SCHEME}"
+
+    @staticmethod
+    def _normalize_name(value: Optional[str]) -> str:
+        return str(value or "").strip()
+
+    def _build_scheme_params(self, scheme: Dict[str, str]) -> Tuple[str, str, str, str, str]:
+        s = scheme or {}
+        return (
+            self._normalize_name(s.get("EvaluationID", "")),
+            s.get("Threshold1", ""),
+            s.get("Threshold2", ""),
+            s.get("Alpha", ""),
+            s.get("EvaluationTime", ""),
+        )
+
+    def get_schemes(self) -> List[Dict[str, str]]:
+        """
+        获取方案列表
+
+        Returns:
+            List[Dict[str, str]]: 方案列表，包含 SchemeId、EvaluationID、Threshold1、Threshold2、
+            Alpha、EvaluationTime、EvaluationResult、PatientID
+        """
+        sql = f"{self._scheme_select_sql()} ORDER BY rowid DESC"
+        return self._execute_query_list(sql, (), "获取方案列表失败")
+
+    def add_scheme(self, scheme: Dict[str, str]) -> bool:
+        """
+        新增方案（必填字段：EvaluationID）
+        """
+        evaluation_id = self._normalize_name((scheme or {}).get("EvaluationID", ""))
+        if not evaluation_id:
+            return False
+
+        sql = f"""
+            INSERT INTO {self.TABLE_SCHEME} (
+                EvaluationID, Threshold1, Threshold2, Alpha, EvaluationTime
+            ) VALUES (?, ?, ?, ?, ?)
+        """
+        params = self._build_scheme_params(scheme)
+        return self._execute_update(sql, params, "新增方案失败") > 0
+
+    def delete_scheme(self, scheme_id: int) -> bool:
+        """
+        根据 rowid 删除方案
+
+        Args:
+            scheme_id: EvaluationManager 的 rowid（别名 SchemeId）
+        """
+        if scheme_id is None:
+            return False
+
+        sql = f"DELETE FROM {self.TABLE_SCHEME} WHERE rowid = ?"
+        return self._execute_update(sql, (scheme_id,), "删除方案失败") > 0
+
+    def add_evaluation_record(
+        self,
+        patient_id: str,
+        threshold1: int,
+        threshold2: int,
+        alpha: str,
+        evaluation_time: str,
+        evaluation_result: str,
+    ) -> bool:
+        """
+        基于当前 EvaluationManager 表自动生成 EvaluationID，并写入一条评估记录。
+
+        Args:
+            patient_id: 患者 ID（PatientID 字段）
+            threshold1: 阈值1
+            threshold2: 阈值2
+            alpha: Alpha 值
+            evaluation_time: 评估时间字符串
+            evaluation_result: 评估结果（label_evalresult）
+        """
+        patient_id = self._normalize_name(patient_id)
+        if not patient_id:
+            return False
+
+        # 计算下一个 EvaluationID（整表范围内累加）
+        sql_next = f"""
+            SELECT COALESCE(MAX(CAST(EvaluationID AS INTEGER)), 0) + 1 AS NextID
+            FROM {self.TABLE_SCHEME}
+        """
+        row = self._execute_query_one(sql_next, (), "获取下一个 EvaluationID 失败")
+        try:
+            next_id = str(int((row or {}).get("NextID", 1)))
+        except Exception:
+            next_id = "1"
+
+        sql = f"""
+            INSERT INTO {self.TABLE_SCHEME} (
+                EvaluationID, Threshold1, Threshold2, Alpha, EvaluationTime, EvaluationResult, PatientID
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+        params: Tuple[Any, ...] = (
+            next_id,
+            str(threshold1),
+            str(threshold2),
+            str(alpha or ""),
+            str(evaluation_time or ""),
+            str(evaluation_result or ""),
+            patient_id,
+        )
+        return self._execute_update(sql, params, "新增评估记录失败") > 0
+

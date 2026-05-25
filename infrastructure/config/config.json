@@ -1,0 +1,29 @@
+{
+    "db_write_log_enabled": false,
+    "NES_port": "COM2",
+    "decoder_port": "COM4",
+    "ws_url": "ws://127.0.0.1:8080",
+    "log_receive_enabled": false,
+    "ws_enable_heartbeat": false,
+    "ws_max_message_size": 4194304,
+    "swap_screens": false,
+    "Countdown_time_minutes": 30,
+    "pingpong_interval_sec": 2.0,
+    "decoder_exe": "C:\\Users\\24114\\Desktop\\16ch_Algorithm\\start_decode.dist\\start_decode.exe",
+    "ssmvep_exe_up": "C:\\Users\\24114\\Desktop\\吞咽ssmvep\\ParadigmOne.exe",
+    "ssvep_exe_up": "C:\\Users\\24114\\Desktop\\吞咽ssvep\\ParadigmOne.exe",
+    "mi_exe_up": "C:\\Users\\24114\\Desktop\\吞咽MI\\ParadigmOne.exe",
+    "logging": {
+        "level": "INFO",
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "loggers": {
+            "infrastructure.hardware.serial_hardware": "INFO",
+            "service.business.ws": "INFO",
+            "service.business.session": "INFO",
+            "service.business.hardware": "INFO",
+            "main": "INFO"
+        }
+    },
+    "websocket_exe": "D:\\WORK_space\\Code_WS\\code_localized\\Websocket_Server\\dist\\Websocket_Server\\websocket_server.exe",
+    "log_heartbeat_frame_enabled": false
+}
