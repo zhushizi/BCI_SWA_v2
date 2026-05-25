@@ -7,13 +7,13 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QPushButton, QWidget
 from PySide6.QtCore import Qt, Signal, QFile
 from PySide6.QtUiTools import QUiLoader
 
 from ui.core.resource_loader import ensure_resources_loaded
 from ui.dialogs.tips_dialog import TipsDialog
-from ui.core.utils import get_ui_attr, safe_connect
+from ui.core.utils import get_ui_attr, safe_call, safe_connect
 from ui.main_window.main_window_treat import TreatPageController
 from ui.main_window.main_window_patient import PatientPageController
 from ui.main_window.main_window_plan import PlanPageController
@@ -158,6 +158,45 @@ class MainWindow(QWidget):
         self._display_user_info()
         self._bind_session_events()
 
+    def _setup_window_chrome_buttons(self) -> None:
+        """标题栏窗口控制：最小化透明热区；关闭按钮沿用 .ui 的 main_quit 图标（勿运行时覆盖样式）。"""
+        chrome_transparent = (
+            "background: transparent;"
+            "border: none;"
+            "border-image: none;"
+        )
+
+        push_button_small = get_ui_attr(self.ui, "pushButton_small")
+        if push_button_small is not None:
+            hit_rect = push_button_small.geometry()
+            push_button_small.setText("")
+            push_button_small.setFlat(True)
+            push_button_small.setAutoFillBackground(False)
+            push_button_small.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            push_button_small.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            push_button_small.setStyleSheet(f"QPushButton#pushButton_small {{ {chrome_transparent} }}")
+            tab_main = get_ui_attr(self.ui, "tabWidget_main")
+            if tab_main is not None:
+                push_button_small.stackUnder(tab_main)
+
+            self._minimize_hit_btn = QPushButton(self.ui)
+            self._minimize_hit_btn.setObjectName("pushButton_minimize_hit")
+            self._minimize_hit_btn.setGeometry(hit_rect)
+            self._minimize_hit_btn.setFlat(True)
+            self._minimize_hit_btn.setAutoFillBackground(False)
+            self._minimize_hit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            self._minimize_hit_btn.setStyleSheet(
+                f"QPushButton#pushButton_minimize_hit {{ {chrome_transparent} }}"
+            )
+            safe_connect(self.logger, self._minimize_hit_btn.clicked, self.showMinimized)
+
+        quit_btn = get_ui_attr(self.ui, "pushButton_quit")
+        if quit_btn is not None:
+            quit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            safe_connect(self.logger, quit_btn.clicked, self.close)
+        if push_button_small is not None and getattr(self, "_minimize_hit_btn", None) is not None:
+            self._minimize_hit_btn.raise_()
+
     def _setup_connections(self):
         """设置信号和槽的连接"""
         # 导航与治疗入口
@@ -173,20 +212,8 @@ class MainWindow(QWidget):
         self.pingpong_status_changed.connect(self._on_pingpong_status_changed)
         self.impedance_value_received.connect(self._on_impedance_value_received)
 
-        # 窗口控制：最小化移到 pushButton（透明），pushButton_small 仅占位不可点
-        minimize_btn = get_ui_attr(self.ui, "pushButton")
-        if minimize_btn is not None:
-            minimize_btn.setStyleSheet("background: transparent; border: none;")
-            minimize_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            safe_connect(self.logger, minimize_btn.clicked, self.showMinimized)
-        pushButton_small = get_ui_attr(self.ui, "pushButton_small")
-        if pushButton_small is not None:
-            pushButton_small.setEnabled(False)
-            pushButton_small.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        quit_btn = get_ui_attr(self.ui, "pushButton_quit")
-        if quit_btn is not None:
-            quit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            safe_connect(self.logger, quit_btn.clicked, self.close)
+        # 窗口控制（最小化 / 关闭）
+        self._setup_window_chrome_buttons()
 
         # 子模块自身信号
         self.treat_controller.bind_signals()

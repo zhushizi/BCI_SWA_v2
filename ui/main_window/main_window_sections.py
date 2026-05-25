@@ -8,7 +8,7 @@ from typing import Callable, Optional
 
 from PySide6.QtCore import Qt, QRect, QSize, QTimer, QObject, QEvent
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QMessageBox, QGraphicsDropShadowEffect, QVBoxLayout
 
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
 from ui.dialogs.tips_dialog import TipsDialog
@@ -331,20 +331,6 @@ _PARADIGM_OVERLAY_LABELS = (
     "label_mi_up_icon",
 )
 
-_SWA_HIDDEN_PARADIGM_WIDGETS = (
-    "pushButton_down_ssvep",
-    "pushButton_down_ssmvep",
-    "pushButton_down_mi",
-    "pushButton_down_mix",
-    "pushButton_up_mix",
-    "label_27",
-    "label_28",
-    "label_29",
-    "label_ssvep_down_icon",
-    "label_ssmvep_down_icon",
-    "label_mi_down_icon",
-)
-
 _SWA_PARADIGM_BUTTONS = (
     "pushButton_up_ssvep",
     "pushButton_up_ssmvep",
@@ -368,7 +354,6 @@ class MainWindowTreatFlow:
 
         self._ensure_patient_select_panel()
         connect_click("pushButton_tab1select", self.open_patient_select_dialog)
-        self._hide_unused_paradigm_widgets()
         self._set_paradigm_overlays_mouse_transparent()
 
         treat_buttons = list(_SWA_PARADIGM_BUTTONS)
@@ -390,15 +375,6 @@ class MainWindowTreatFlow:
 
         start_evaluate_btn = get_ui_attr(self.ui, "pushButton_startevaluate")
         safe_connect(self.logger, getattr(start_evaluate_btn, "clicked", None), self.on_start_evaluate_clicked)
-
-    def _hide_unused_paradigm_widgets(self) -> None:
-        tab_treat = get_ui_attr(self.ui, "tab_treat")
-        if tab_treat is None:
-            return
-        for name in _SWA_HIDDEN_PARADIGM_WIDGETS:
-            widget = tab_treat.findChild(QWidget, name)
-            if widget is not None:
-                safe_call(self.logger, getattr(widget, "hide", None))
 
     def _set_paradigm_overlays_mouse_transparent(self) -> None:
         for name in _PARADIGM_OVERLAY_LABELS:

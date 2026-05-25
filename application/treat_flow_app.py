@@ -46,8 +46,10 @@ class TreatFlowApp:
         parts = name.replace("pushButton_", "").split("_")
         body_key = parts[0] if parts else ""
         paradigm_key = parts[1] if len(parts) > 1 else ""
-        body_map = {"up": "吞咽", "down": "下肢"}
-        paradigm_map = {"ssvep": "SSVEP", "ssmvep": "SSMVEP", "mi": "MI", "mix": "MIX"}
+        if body_key == "down":
+            return "", "", ""
+        body_map = {"up": "吞咽"}
+        paradigm_map = {"ssvep": "SSVEP", "ssmvep": "SSMVEP", "mi": "MI"}
         body_display = body_map.get(body_key, "")
         paradigm_display = paradigm_map.get(paradigm_key, "")
         plan_name = "-".join(p for p in [body_display, paradigm_display] if p)
