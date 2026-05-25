@@ -3,13 +3,18 @@ from __future__ import annotations
 患者页（tabWidget 的 tab2）管理
 '''
 import logging
+from math import ceil
 from typing import Callable, List, Optional
 
-from PySide6.QtCore import Qt, QDateTime, QRect, QSize, Signal
+from PySide6.QtCore import QEvent, QObject, Qt, QDateTime, QRect, QSize, Signal
+from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
     QWidget,
     QCheckBox,
+    QFrame,
     QHBoxLayout,
+    QLabel,
+    QLineEdit,
     QPushButton,
     QHeaderView,
     QStyleOptionButton,
@@ -89,8 +94,31 @@ class CheckBoxHeader(QHeaderView):
         )
 
 
+class _PatientTableViewportFilter(QObject):
+    """表格视口尺寸变化时重算每页行数并刷新分页。"""
+
+    def __init__(self, controller: "PatientPageController") -> None:
+        super().__init__()
+        self._controller = controller
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.Resize:
+            old_size = self._controller._page_size
+            self._controller._recalculate_page_size()
+            if self._controller._page_size != old_size:
+                self._controller._refresh_page()
+            else:
+                self._controller._layout_pagination_position()
+        return False
+
+
 class PatientPageController(BaseTableController):
     """患者页（tabWidget 的 tab2）管理"""
+
+    _PAGINATION_HEIGHT = 36
+    _PAGINATION_RIGHT_INSET = 24
+    _PAGINATION_BOTTOM_INSET = 6
+    _DEFAULT_PAGE_SIZE = 15
 
     def __init__(
         self,
@@ -111,7 +139,12 @@ class PatientPageController(BaseTableController):
         self._row_checkboxes: List[QCheckBox] = []
         self._header_checkbox: Optional[CheckBoxHeader] = None
         self._bulk_updating_checks = False
+        self._all_patients: List[dict] = []
         self._patient_data: List[dict] = []
+        self._page_index = 0
+        self._page_size = self._DEFAULT_PAGE_SIZE
+        self._pagination_frame: Optional[QFrame] = None
+        self._viewport_filter: Optional[_PatientTableViewportFilter] = None
         self._on_patient_selected = on_patient_selected
 
     # ---------- 对外接口 ----------
@@ -129,10 +162,15 @@ class PatientPageController(BaseTableController):
         safe_connect(self.logger, getattr(new_btn_tab3, "clicked", None), self._open_new_patient_dialog)
         new_btn = get_ui_attr(self.ui, "pushButton_new")
         safe_connect(self.logger, getattr(new_btn, "clicked", None), self._open_new_patient_dialog)
+        delete_btn = get_ui_attr(self.ui, "pushButton")
+        safe_connect(self.logger, getattr(delete_btn, "clicked", None), self._on_delete_button_clicked)
 
     def init_ui(self):
         """初始化表格与状态"""
         self._setup_patient_table()
+        self._build_pagination()
+        self._install_table_viewport_filter()
+        self._update_pagination()
 
     def refresh(self):
         """刷新患者数据"""
@@ -186,6 +224,198 @@ class PatientPageController(BaseTableController):
         self._row_checkboxes = []
         self._load_patient_data()
 
+    def _install_table_viewport_filter(self) -> None:
+        table = self._get_patient_table()
+        if table is None:
+            return
+        viewport = table.viewport()
+        if viewport is None:
+            return
+        if self._viewport_filter is not None:
+            viewport.removeEventFilter(self._viewport_filter)
+        self._viewport_filter = _PatientTableViewportFilter(self)
+        viewport.installEventFilter(self._viewport_filter)
+
+    def _build_pagination(self) -> None:
+        if self._pagination_frame is not None:
+            return
+
+        table = self._get_patient_table()
+        parent = table.parentWidget() if table is not None else self.parent
+        if parent is None:
+            parent = self.parent
+
+        pagination = QFrame(parent)
+        pagination.setObjectName("patientManagePagination")
+        pagination.setMinimumHeight(self._PAGINATION_HEIGHT)
+        pagination.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        pagination.setStyleSheet(
+            "QFrame#patientManagePagination { background: transparent; }"
+            "QLabel { color: #98A2B3; font-size: 12px; padding: 2px 0; }"
+            "QPushButton {"
+            "background: transparent;"
+            "border: none;"
+            "color: #98A2B3;"
+            "font-size: 13px;"
+            "padding: 0;"
+            "}"
+            "QPushButton:hover:enabled { color: #4B86FC; }"
+            "QPushButton:disabled { color: #D7DDEA; }"
+            "QLineEdit {"
+            "background: #FFFFFF;"
+            "border: none;"
+            "border-radius: 4px;"
+            "color: #8E8E93;"
+            "font-size: 12px;"
+            "padding: 1px 4px;"
+            "}"
+        )
+        layout = QHBoxLayout(pagination)
+        layout.setContentsMargins(0, 4, 0, 4)
+        layout.setSpacing(6)
+        layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        layout.addStretch()
+
+        self._total_label = QLabel("共0条", pagination)
+        layout.addWidget(self._total_label)
+
+        self._prev_button = QPushButton("<", pagination)
+        self._prev_button.setFixedSize(16, 24)
+        self._prev_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._prev_button.clicked.connect(self._on_prev_page)
+        layout.addWidget(self._prev_button)
+
+        self._page_label = QLabel("0/0页", pagination)
+        self._page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self._page_label)
+
+        self._next_button = QPushButton(">", pagination)
+        self._next_button.setFixedSize(16, 24)
+        self._next_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._next_button.clicked.connect(self._on_next_page)
+        layout.addWidget(self._next_button)
+
+        layout.addSpacing(4)
+        layout.addWidget(QLabel("前往", pagination))
+
+        self._page_jump_input = QLineEdit(pagination)
+        self._page_jump_input.setFixedSize(36, 20)
+        self._page_jump_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._page_jump_input.setValidator(QIntValidator(1, 9999, self._page_jump_input))
+        self._page_jump_input.returnPressed.connect(self._on_jump_page)
+        self._page_jump_input.editingFinished.connect(self._on_jump_page)
+        layout.addWidget(self._page_jump_input)
+
+        layout.addWidget(QLabel("页", pagination))
+        self._pagination_frame = pagination
+        pagination.show()
+        self._layout_pagination_position()
+
+    def _layout_pagination_position(self) -> None:
+        if self._pagination_frame is None:
+            return
+        table = self._get_patient_table()
+        if table is None:
+            return
+
+        geo = table.geometry()
+        self._pagination_frame.adjustSize()
+        content_width = self._pagination_frame.sizeHint().width()
+        pag_h = max(self._PAGINATION_HEIGHT, self._pagination_frame.sizeHint().height())
+        pag_w = min(content_width, geo.width())
+        pag_x = geo.x() + geo.width() - pag_w - self._PAGINATION_RIGHT_INSET
+        pag_y = geo.y() + geo.height() - pag_h - self._PAGINATION_BOTTOM_INSET
+        self._pagination_frame.setGeometry(pag_x, pag_y, pag_w, pag_h)
+        self._pagination_frame.raise_()
+
+    def _recalculate_page_size(self) -> None:
+        table = self._get_patient_table()
+        if table is None:
+            return
+        v_header = table.verticalHeader()
+        row_height = v_header.defaultSectionSize() if v_header is not None else 46
+        viewport_h = table.viewport().height()
+        if viewport_h <= 0:
+            header = table.horizontalHeader()
+            header_h = header.height() if header is not None else 40
+            viewport_h = max(table.geometry().height() - header_h, row_height)
+        page_size = max(1, viewport_h // row_height)
+        if page_size != self._page_size:
+            self._page_size = page_size
+            self._clamp_page_index()
+
+    def _total_pages(self) -> int:
+        if not self._all_patients:
+            return 0
+        return int(ceil(len(self._all_patients) / self._page_size))
+
+    def _clamp_page_index(self) -> None:
+        total_pages = self._total_pages()
+        if total_pages <= 0:
+            self._page_index = 0
+            return
+        self._page_index = min(max(self._page_index, 0), total_pages - 1)
+
+    def _page_patients(self) -> List[dict]:
+        start = self._page_index * self._page_size
+        end = start + self._page_size
+        return self._all_patients[start:end]
+
+    def _update_pagination(self) -> None:
+        if self._pagination_frame is None:
+            return
+        total = len(self._all_patients)
+        total_pages = self._total_pages()
+        current_page = 0 if total_pages == 0 else self._page_index + 1
+        self._total_label.setText(f"共{total}条")
+        self._page_label.setText(f"{current_page}/{total_pages}页")
+        self._page_jump_input.setText("" if total_pages == 0 else str(current_page))
+        self._page_jump_input.setEnabled(total_pages > 0)
+        self._prev_button.setEnabled(self._page_index > 0)
+        self._next_button.setEnabled(total_pages > 0 and self._page_index < total_pages - 1)
+        self._layout_pagination_position()
+
+    def _refresh_page(self) -> None:
+        table = self._get_patient_table()
+        if table is None:
+            return
+        self._recalculate_page_size()
+        self._clamp_page_index()
+        self._render_patient_table_page(table, self._page_patients())
+        self._update_pagination()
+
+    def _on_prev_page(self) -> None:
+        if self._page_index <= 0:
+            return
+        self._page_index -= 1
+        self._refresh_page()
+
+    def _on_next_page(self) -> None:
+        total_pages = self._total_pages()
+        if total_pages == 0 or self._page_index >= total_pages - 1:
+            return
+        self._page_index += 1
+        self._refresh_page()
+
+    def _on_jump_page(self) -> None:
+        total_pages = self._total_pages()
+        if total_pages == 0:
+            return
+        text = self._page_jump_input.text().strip()
+        try:
+            page = int(text)
+        except ValueError:
+            self._update_pagination()
+            return
+        self._page_index = min(max(page, 1), total_pages) - 1
+        self._refresh_page()
+
+    def _apply_patients(self, patients: List[dict], *, reset_page: bool = False) -> None:
+        if reset_page:
+            self._page_index = 0
+        self._all_patients = patients
+        self._refresh_page()
+
     def _load_patient_data(self):
         table = self._get_patient_table()
         if table is None:
@@ -199,12 +429,16 @@ class PatientPageController(BaseTableController):
             TipsDialog.show_tips(self.parent, f"加载患者数据失败: {e}")
             patients = []
 
-        self._populate_patient_table(table, patients)
+        self._apply_patients(patients)
 
-    def _populate_patient_table(self, table, patients: List[dict]):
+    def _render_patient_table_page(self, table, patients: List[dict]) -> None:
         table.blockSignals(True)
         self.clear_table()
         self._row_checkboxes = []
+        if self._header_checkbox is not None:
+            self._bulk_updating_checks = True
+            self._header_checkbox.setCheckState(Qt.CheckState.Unchecked)
+            self._bulk_updating_checks = False
 
         if not patients:
             table.blockSignals(False)
@@ -267,37 +501,28 @@ class PatientPageController(BaseTableController):
         if table.columnCount() > 6:
             table.setCellWidget(row, 6, view_container)
 
-        edit_btn = QPushButton()
+        edit_btn = QPushButton("编辑")
         edit_btn.setCursor(Qt.PointingHandCursor)
-        edit_btn.setFixedSize(35, 35)
+        edit_btn.setFlat(True)
         edit_btn.setStyleSheet(
             "QPushButton {"
-            "    border: none;"
+            "    color: #4B86FC;"
+            "    text-decoration: underline;"
             "    background: transparent;"
-            "    border-image: url(:/treat/pic/treat_edit.png);"
+            "    border: none;"
+            "    font-size: 20px;"
+            "}"
+            "QPushButton:pressed {"
+            "    color: #2f64c8;"
             "}"
         )
         edit_btn.clicked.connect(lambda checked, r=row: self._on_edit_patient_clicked(r))
 
-        del_btn = QPushButton()
-        del_btn.setCursor(Qt.PointingHandCursor)
-        del_btn.setFixedSize(35, 35)
-        del_btn.setStyleSheet(
-            "QPushButton {"
-            "    border: none;"
-            "    background: transparent;"
-            "    border-image: url(:/treat/pic/treat_del.png);"
-            "}"
-        )
-        del_btn.clicked.connect(lambda checked, r=row: self._on_delete_patient_clicked(r))
-
         op_container = QWidget()
         op_layout = QHBoxLayout(op_container)
         op_layout.setContentsMargins(0, 0, 0, 0)
-        op_layout.setSpacing(35)
         op_layout.setAlignment(Qt.AlignCenter)
         op_layout.addWidget(edit_btn)
-        op_layout.addWidget(del_btn)
         if table.columnCount() > 7:
             table.setCellWidget(row, 7, op_container)
 
@@ -349,35 +574,72 @@ class PatientPageController(BaseTableController):
         else:
             TipsDialog.show_tips(self.parent, "更新患者失败")
 
-    def _on_delete_patient_clicked(self, row: int):
-        if not self._patient_data or row >= len(self._patient_data):
-            TipsDialog.show_tips(self.parent, "无法获取患者信息")
+    def _on_delete_button_clicked(self):
+        """工具栏「删除」：删除表格中已勾选的患者。"""
+        if not self._row_checkboxes or not self._patient_data:
+            TipsDialog.show_tips(self.parent, "请先勾选要删除的患者")
             return
 
-        patient = self._patient_data[row]
-        patient_id = patient.get("PatientId", "")
-        patient_name = patient.get("Name", "")
+        targets: List[dict] = []
+        for row, cb in enumerate(self._row_checkboxes):
+            if cb.checkState() != Qt.CheckState.Checked:
+                continue
+            if row >= len(self._patient_data):
+                continue
+            targets.append(self._patient_data[row])
 
-        if not patient_id:
-            TipsDialog.show_tips(self.parent, "病历号为空，无法删除")
+        if not targets:
+            TipsDialog.show_tips(self.parent, "请先勾选要删除的患者")
             return
 
         parent_win = self.parent.window() if self.parent else None
-        if not TipsDialog.show_confirm(parent_win, f"确定删除患者「{patient_name or patient_id}」及其诊疗记录？"):
+        if len(targets) == 1:
+            patient = targets[0]
+            name = patient.get("Name") or patient.get("PatientId") or ""
+            confirm_msg = f"确定删除患者「{name}」及其诊疗记录？"
+        else:
+            names = [
+                p.get("Name") or p.get("PatientId") or ""
+                for p in targets[:5]
+            ]
+            suffix = f"等 {len(targets)} 位" if len(targets) > 5 else f"共 {len(targets)} 位"
+            confirm_msg = f"确定删除「{'、'.join(names)}」{suffix}患者及其诊疗记录？"
+        if not TipsDialog.show_confirm(parent_win, confirm_msg):
             return
 
+        deleted = 0
+        failed = 0
+        for patient in targets:
+            patient_id = patient.get("PatientId", "")
+            if not patient_id:
+                failed += 1
+                continue
+            if self._delete_patient(patient_id):
+                deleted += 1
+            else:
+                failed += 1
+
+        if deleted:
+            self.refresh()
+        if failed and not deleted:
+            TipsDialog.show_tips(self.parent, "删除患者失败")
+        elif failed:
+            TipsDialog.show_tips(self.parent, f"已删除 {deleted} 位患者，{failed} 位删除失败")
+        else:
+            TipsDialog.show_tips(self.parent, "删除患者成功")
+
+    def _delete_patient(self, patient_id: str) -> bool:
         try:
             ok = self.patient_app.delete_patient(patient_id)
         except Exception as e:
-            self.logger.error(f"删除患者异常: {e}")
-            TipsDialog.show_tips(self.parent, f"删除患者失败: {e}")
-            return
+            self.logger.error(f"删除患者异常 patient_id={patient_id}: {e}")
+            return False
 
         if ok:
-            TipsDialog.show_tips(self.parent, "删除患者成功")
-            self.refresh()
-        else:
-            TipsDialog.show_tips(self.parent, "删除患者失败")
+            clear_ctx = getattr(self.parent, "clear_treat_context_if_patient_removed", None)
+            if callable(clear_ctx):
+                clear_ctx(patient_id)
+        return ok
 
     def _open_new_patient_dialog(self):
         dialog = PatientNewDialog(self.parent)
@@ -454,9 +716,7 @@ class PatientPageController(BaseTableController):
             TipsDialog.show_tips(self.parent, f"搜索患者失败: {e}")
             patients = []
 
-        table = self._get_patient_table()
-        if table is not None:
-            self._populate_patient_table(table, patients)
+        self._apply_patients(patients, reset_page=True)
 
     def _on_reset_search(self):
         line_edit = get_ui_attr(self.ui, "lineEdit_search")
