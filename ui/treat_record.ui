@@ -158,23 +158,6 @@ QTableWidget#tableWidget_treatrecord::item:selected {
     </property>
    </column>
   </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>-1</x>
-     <y>0</y>
-     <width>1171</width>
-     <height>71</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">border-image: url(:/main/pic/main_tabtitle.png);
-border-radius: 30px;</string>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
@@ -249,38 +232,6 @@ padding-bottom: 4px;</string>
    </property>
    <property name="text">
     <string>治疗记录</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_32">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>49</y>
-     <width>21</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">border-image: url(:/main/pic/main_color.png);</string>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_33">
-   <property name="geometry">
-    <rect>
-     <x>1149</x>
-     <y>50</y>
-     <width>21</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">border-image: url(:/main/pic/main_color.png);</string>
-   </property>
-   <property name="text">
-    <string/>
    </property>
   </widget>
  </widget>

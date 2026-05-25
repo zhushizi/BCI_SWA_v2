@@ -323,9 +323,6 @@ class MainWindow(QWidget):
         """发送左右通道的开始治疗命令帧（保留位区分通道）"""
         self._treat_flow.start_treatment_both_channels()
 
-    def _get_first_char(self, text: str) -> str:
-        return self._user_info.get_first_char(text)
-
     def _extract_patient_id(self, patient: dict | None) -> str | None:
         return self._treat_flow.extract_patient_id(patient)
 

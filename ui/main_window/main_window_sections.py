@@ -180,6 +180,9 @@ class MainWindowNavigation:
 
 
 class MainWindowUserInfo:
+    _CONFIG_KEY_HOSPITAL = "hospital_name"
+    _CONFIG_KEY_DEPARTMENT = "department_name"
+
     def __init__(self, host):
         self._host = host
         self.ui = host.ui
@@ -192,16 +195,6 @@ class MainWindowUserInfo:
             self._on_other_confirm,
         )
 
-    def get_first_char(self, text: str) -> str:
-        if not text:
-            return ""
-        first_char = text[0]
-        if "\u4e00" <= first_char <= "\u9fff":
-            return first_char
-        if first_char.isalnum():
-            return first_char
-        return first_char
-
     def display_user_info(self) -> None:
         if not self._host.user_app.is_authenticated:
             return
@@ -211,14 +204,6 @@ class MainWindowUserInfo:
         username = current_user.get("UserName", "")
         label_username = get_ui_attr(self.ui, "label_username")
         safe_call(self._host.logger, getattr(label_username, "setText", None), username)
-        first_char = self.get_first_char(username)
-        label_photo = get_ui_attr(self.ui, "label_userProphoto")
-        if label_photo:
-            label_photo.setText(first_char)
-            label_photo.setStyleSheet(
-                "color: rgba(149, 149, 149, 1);"
-                "border-image: url(:/main/pic/main_name_rect.png);"
-            )
         user_type = current_user.get("UserType", 1)
         user_title_map = {0: "管理员", 1: "普通用户", 2: "操作员"}
         user_title = user_title_map.get(user_type, "用户")
@@ -229,8 +214,11 @@ class MainWindowUserInfo:
         config_app = getattr(self._host, "config_app", None)
         if not config_app:
             return
-        hospital = str(config_app.get("hospital_name", "") or "").strip()
-        department = str(config_app.get("department_name", "") or "").strip()
+        hospital = str(config_app.get(self._CONFIG_KEY_HOSPITAL, "") or "").strip()
+        department = str(config_app.get(self._CONFIG_KEY_DEPARTMENT, "") or "").strip()
+        self._apply_org_info(hospital, department)
+
+    def _apply_org_info(self, hospital: str, department: str) -> None:
         hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
         hospital_label = get_ui_attr(self.ui, "label_hosipital")
         if hospital_edit:
@@ -242,17 +230,28 @@ class MainWindowUserInfo:
         if department_edit:
             safe_call(self._host.logger, getattr(department_edit, "setText", None), department)
         if department_label:
-            safe_call(self._host.logger, getattr(department_label, "setText", None), department)
+            safe_call(
+                self._host.logger,
+                getattr(department_label, "setText", None),
+                department,
+            )
 
     def _on_other_confirm(self) -> None:
-        config_app = getattr(self._host, "config_app", None)
-        if not config_app:
-            return
         hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
         department_edit = get_ui_attr(self.ui, "lineEdit_department_name")
         hospital = hospital_edit.text().strip() if hospital_edit else ""
         department = department_edit.text().strip() if department_edit else ""
-        if not config_app.update({"hospital_name": hospital, "department_name": department}):
+        self._apply_org_info(hospital, department)
+        config_app = getattr(self._host, "config_app", None)
+        if not config_app:
+            return
+        ok = config_app.update(
+            {
+                self._CONFIG_KEY_HOSPITAL: hospital,
+                self._CONFIG_KEY_DEPARTMENT: department,
+            }
+        )
+        if not ok:
             self._host.logger.warning("保存医院/科室配置失败")
 
 

@@ -353,7 +353,7 @@ QTabWidget#tabWidget QTabBar::tab {
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>2</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
@@ -1729,11 +1729,17 @@ QTableWidget#tableWidget_plan::item:selected:!active {
        <property name="showGrid">
         <bool>false</bool>
        </property>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>25</number>
+       </attribute>
        <attribute name="horizontalHeaderDefaultSectionSize">
-        <number>220</number>
+        <number>236</number>
        </attribute>
        <attribute name="verticalHeaderVisible">
         <bool>false</bool>
+       </attribute>
+       <attribute name="verticalHeaderMinimumSectionSize">
+        <number>23</number>
        </attribute>
        <attribute name="verticalHeaderDefaultSectionSize">
         <number>46</number>
@@ -1890,54 +1896,6 @@ padding: 6px 12px;
         <string/>
        </property>
       </widget>
-      <widget class="QPushButton" name="pushButton_plan_in">
-       <property name="geometry">
-        <rect>
-         <x>1473</x>
-         <y>40</y>
-         <width>72</width>
-         <height>41</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
-background: transparent;
-border: 1px solid #4B86FC;
-color: #4B86FC;
-border-radius: 10px;
-padding: 6px 12px;
-}
-QPushButton:hover { background: rgba(75,134,252,0.08); }
-QPushButton:pressed { background: rgba(75,134,252,0.16); }</string>
-       </property>
-       <property name="text">
-        <string>导入</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pushButton_plan_out">
-       <property name="geometry">
-        <rect>
-         <x>1560</x>
-         <y>40</y>
-         <width>71</width>
-         <height>41</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
-background: transparent;
-border: 1px solid #4B86FC;
-color: #4B86FC;
-border-radius: 10px;
-padding: 6px 12px;
-}
-QPushButton:hover { background: rgba(75,134,252,0.08); }
-QPushButton:pressed { background: rgba(75,134,252,0.16); }</string>
-       </property>
-       <property name="text">
-        <string>导出</string>
-       </property>
-      </widget>
       <widget class="QLabel" name="label_plan_bg">
        <property name="geometry">
         <rect>
@@ -1957,8 +1915,6 @@ border-radius: 8px;</string>
       </widget>
       <zorder>label_plan_bg</zorder>
       <zorder>tableWidget_plan</zorder>
-      <zorder>pushButton_plan_in</zorder>
-      <zorder>pushButton_plan_out</zorder>
       <zorder>pushButton_plan_new</zorder>
       <zorder>pushButton_plan_reset</zorder>
       <zorder>label_plan_search_bg</zorder>
@@ -3251,10 +3207,10 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
     <widget class="QLabel" name="label_hosipital">
      <property name="geometry">
       <rect>
-       <x>57</x>
+       <x>39</x>
        <y>860</y>
-       <width>53</width>
-       <height>15</height>
+       <width>91</width>
+       <height>20</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -3383,7 +3339,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       </size>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -4155,7 +4111,7 @@ border-radius: 25px;</string>
       <zorder>label_squarewave</zorder>
       <zorder>label_sharpwave</zorder>
      </widget>
-          <widget class="QWidget" name="tab_3">
+     <widget class="QWidget" name="tab_3">
       <attribute name="title">
        <string>Tab 1</string>
       </attribute>
