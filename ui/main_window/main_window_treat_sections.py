@@ -120,11 +120,6 @@ class TreatNavigation:
         self._wave_square: Optional[EvalWaveWidget] = None
         self._wave_sharp: Optional[EvalWaveWidget] = None
         # 滚轮防抖：仅在停止在某个值后发送指令，调整过程中不发送
-        self._threshold1_commit_timer = QTimer()
-        self._threshold1_commit_timer.setSingleShot(True)
-        self._threshold2_commit_timer = QTimer()
-        self._threshold2_commit_timer.setSingleShot(True)
-
     def bind(self) -> None:
         return_btn = get_ui_attr(self.ui, "pushButton_return")
         safe_connect(self._logger, getattr(return_btn, "clicked", None), self.on_preprocess_return)
@@ -277,9 +272,9 @@ class TreatNavigation:
         stepper.setGeometry(host.rect())
         stepper.set_range(self.THRESHOLD1_MIN, self.THRESHOLD1_MAX)
         stepper.set_single_step(1)
-        stepper.set_value(0)
+        stepper.set_value(0, emit_index_changed=False)
         self._threshold1_wheel = stepper
-        host.setEnabled(False)
+        # 阈值1：保持宿主可用，未开始时由 _Threshold1GuardFilter 拦截
 
     def _init_threshold2_wheel(self) -> None:
         """在 widget_threshold2_wheel 中创建「按钮 + 数值」加减器，范围 0-500 步长 2，初始值 2。"""
@@ -293,7 +288,7 @@ class TreatNavigation:
         stepper.setGeometry(host.rect())
         stepper.set_range(self.THRESHOLD2_MIN, self.THRESHOLD2_MAX)
         stepper.set_single_step(self.THRESHOLD2_STEP)
-        stepper.set_value(2)
+        stepper.set_value(2, emit_index_changed=False)
         self._threshold2_wheel = stepper
         host.setEnabled(False)
 
@@ -323,7 +318,6 @@ class TreatNavigation:
             slider.valueChanged.connect(on_slider_value_changed)
             stepper.valueChanged.connect(on_stepper_value_changed)
         self._threshold1_slider = slider
-        host.setEnabled(False)
 
     def _init_threshold2_slider(self) -> None:
         """在 widget_threshold2_slider 中创建滑杆，范围 0-500 步长 2，与滚轮双向同步，初始值 2。"""
@@ -356,31 +350,18 @@ class TreatNavigation:
         self._threshold2_slider = slider
         host.setEnabled(False)
 
-    # 滚轮防抖间隔（毫秒）：停止在该值后超过此时间才发送指令
-    _THRESHOLD_WHEEL_COMMIT_MS = 500
-
     def _bind_threshold_wheel_signals(self) -> None:
-        """滚轮仅在停止在某个值后发送评估帧，调整过程中不发送。"""
+        """加减器 currentIndexChanged 已在控件内 1s 节流，此处直接触发下发。"""
         if self._threshold1_wheel is not None:
-            self._threshold1_commit_timer.timeout.connect(self._on_threshold1_commit)
-            self._threshold1_wheel.currentIndexChanged.connect(self._threshold1_wheel_value_changing)
+            self._threshold1_wheel.currentIndexChanged.connect(self._on_threshold1_commit)
 
         if self._threshold2_wheel is not None:
-            self._threshold2_commit_timer.timeout.connect(self._on_threshold2_commit)
-            self._threshold2_wheel.currentIndexChanged.connect(self._threshold2_wheel_value_changing)
+            self._threshold2_wheel.currentIndexChanged.connect(self._on_threshold2_commit)
 
-    def _threshold1_wheel_value_changing(self, _value: int) -> None:
-        self._threshold1_commit_timer.stop()
-        self._threshold1_commit_timer.start(self._THRESHOLD_WHEEL_COMMIT_MS)
-
-    def _threshold2_wheel_value_changing(self, _value: int) -> None:
-        self._threshold2_commit_timer.stop()
-        self._threshold2_commit_timer.start(self._THRESHOLD_WHEEL_COMMIT_MS)
-
-    def _on_threshold1_commit(self) -> None:
+    def _on_threshold1_commit(self, _index: int = 0) -> None:
         self.on_threshold1_value_changed(0)
 
-    def _on_threshold2_commit(self) -> None:
+    def _on_threshold2_commit(self, _index: int = 0) -> None:
         self.on_threshold2_value_changed(0)
 
     def enter_preprocess_page(self) -> None:
@@ -774,9 +755,11 @@ class TreatNavigation:
     def _reset_neu_threshold_spinboxes(self) -> None:
         """重置阈值1/2 滚轮与滑杆（阈值1 归 0，阈值2 归 0）。"""
         if self._threshold1_wheel is not None:
-            self._threshold1_wheel.set_value(0)
+            self._threshold1_wheel.cancel_pending_index_changed()
+            self._threshold1_wheel.set_value(0, emit_index_changed=False)
         if self._threshold2_wheel is not None:
-            self._threshold2_wheel.set_value(0)
+            self._threshold2_wheel.cancel_pending_index_changed()
+            self._threshold2_wheel.set_value(0, emit_index_changed=False)
         if self._threshold1_slider is not None:
             self._threshold1_slider.set_value(0)
         if self._threshold2_slider is not None:
@@ -911,18 +894,28 @@ class TreatNavigation:
         if threshold2_complete_btn is not None:
             threshold2_complete_btn.setEnabled(False)
         host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
-        # 阈值1 不禁用，由 _Threshold1GuardFilter 拦截并提示「请先点击开始测试」
+        if host_wheel is not None:
+            host_wheel.setEnabled(True)
+        if self._threshold1_wheel is not None:
+            self._threshold1_wheel.setEnabled(True)
         host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
         if host_wheel2 is not None:
             host_wheel2.setEnabled(False)
+        if self._threshold2_wheel is not None:
+            self._threshold2_wheel.setEnabled(False)
         host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
-        # 阈值1 不禁用，由 _Threshold1GuardFilter 拦截并提示
+        if host_slider1 is not None:
+            host_slider1.setEnabled(True)
+        if self._threshold1_slider is not None:
+            self._threshold1_slider.setEnabled(True)
         host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
         if host_slider2 is not None:
             host_slider2.setEnabled(False)
+        if self._threshold2_slider is not None:
+            self._threshold2_slider.setEnabled(False)
 
         self._stop_eval_waves()
-        self._show_neu_mask_over("label_48")
+        self._hide_neu_mask()
 
     def _set_neu_tab_eval_step1_state(self) -> None:
         self._neu_step = 1
@@ -942,18 +935,25 @@ class TreatNavigation:
         host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
         if host_wheel is not None:
             host_wheel.setEnabled(True)
+        if self._threshold1_wheel is not None:
+            self._threshold1_wheel.setEnabled(True)
         host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
         if host_wheel2 is not None:
             host_wheel2.setEnabled(False)
+        if self._threshold2_wheel is not None:
+            self._threshold2_wheel.setEnabled(False)
         host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
         if host_slider1 is not None:
             host_slider1.setEnabled(True)
+        if self._threshold1_slider is not None:
+            self._threshold1_slider.setEnabled(True)
         host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
         if host_slider2 is not None:
             host_slider2.setEnabled(False)
+        if self._threshold2_slider is not None:
+            self._threshold2_slider.setEnabled(False)
 
-        # 阶段1 保持在 label_48 上的蒙层
-        self._show_neu_mask_over("label_48")
+        self._hide_neu_mask()
 
     def _set_neu_tab_eval_step2_state(self) -> None:
         self._neu_step = 2
@@ -972,18 +972,25 @@ class TreatNavigation:
         host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
         if host_wheel is not None:
             host_wheel.setEnabled(False)
+        if self._threshold1_wheel is not None:
+            self._threshold1_wheel.setEnabled(False)
         host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
         if host_wheel2 is not None:
             host_wheel2.setEnabled(True)
+        if self._threshold2_wheel is not None:
+            self._threshold2_wheel.setEnabled(True)
         host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
         if host_slider1 is not None:
             host_slider1.setEnabled(False)
+        if self._threshold1_slider is not None:
+            self._threshold1_slider.setEnabled(False)
         host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
         if host_slider2 is not None:
             host_slider2.setEnabled(True)
+        if self._threshold2_slider is not None:
+            self._threshold2_slider.setEnabled(True)
 
-        # 阶段2 将蒙层移动到 label_33
-        self._show_neu_mask_over("label_33")
+        self._hide_neu_mask()
 
     def _set_neu_tab_stopped_state(self) -> None:
         self._neu_step = 0
@@ -1000,15 +1007,25 @@ class TreatNavigation:
         if threshold2_complete_btn is not None:
             threshold2_complete_btn.setEnabled(False)
         host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
-        # 阈值1 不禁用，由 _Threshold1GuardFilter 拦截并提示
+        if host_wheel is not None:
+            host_wheel.setEnabled(True)
+        if self._threshold1_wheel is not None:
+            self._threshold1_wheel.setEnabled(True)
         host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
         if host_wheel2 is not None:
             host_wheel2.setEnabled(False)
+        if self._threshold2_wheel is not None:
+            self._threshold2_wheel.setEnabled(False)
         host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
-        # 阈值1 不禁用，由 _Threshold1GuardFilter 拦截并提示
+        if host_slider1 is not None:
+            host_slider1.setEnabled(True)
+        if self._threshold1_slider is not None:
+            self._threshold1_slider.setEnabled(True)
         host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
         if host_slider2 is not None:
             host_slider2.setEnabled(False)
+        if self._threshold2_slider is not None:
+            self._threshold2_slider.setEnabled(False)
 
         self._stop_eval_waves()
         self._hide_neu_mask()

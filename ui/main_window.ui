@@ -3357,7 +3357,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
        <property name="font">
         <font>
          <pointsize>28</pointsize>
-         <bold>true</bold>
+         <bold>false</bold>
         </font>
        </property>
        <property name="styleSheet">
@@ -3379,7 +3379,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
        <property name="font">
         <font>
          <pointsize>28</pointsize>
-         <bold>true</bold>
+         <bold>false</bold>
         </font>
        </property>
        <property name="styleSheet">
@@ -3770,62 +3770,6 @@ border-radius: 8px;</string>
         <string/>
        </property>
       </widget>
-      <widget class="QLabel" name="label_eval_panel_left">
-       <property name="geometry">
-        <rect>
-         <x>90</x>
-         <y>40</y>
-         <width>820</width>
-         <height>710</height>
-        </rect>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>820</width>
-         <height>710</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>820</width>
-         <height>710</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(243, 245, 248);border-radius: 25px;</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_eval_panel_right">
-       <property name="geometry">
-        <rect>
-         <x>1030</x>
-         <y>40</y>
-         <width>820</width>
-         <height>710</height>
-        </rect>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>820</width>
-         <height>710</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>820</width>
-         <height>710</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(243, 245, 248);border-radius: 25px;</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
       <widget class="QLabel" name="label_eval_divider">
        <property name="geometry">
         <rect>
@@ -3857,8 +3801,8 @@ border-radius: 8px;</string>
       <widget class="QLabel" name="label_eval_tip1">
        <property name="geometry">
         <rect>
-         <x>250</x>
-         <y>180</y>
+         <x>340</x>
+         <y>130</y>
          <width>13</width>
          <height>13</height>
         </rect>
@@ -3885,8 +3829,8 @@ border-radius: 8px;</string>
       <widget class="QLabel" name="label_eval_hint1">
        <property name="geometry">
         <rect>
-         <x>270</x>
-         <y>180</y>
+         <x>360</x>
+         <y>130</y>
          <width>291</width>
          <height>18</height>
         </rect>
@@ -3918,8 +3862,8 @@ border-radius: 8px;</string>
       <widget class="QLabel" name="label_eval_tip2">
        <property name="geometry">
         <rect>
-         <x>1230</x>
-         <y>140</y>
+         <x>1280</x>
+         <y>130</y>
          <width>13</width>
          <height>13</height>
         </rect>
@@ -3946,8 +3890,8 @@ border-radius: 8px;</string>
       <widget class="QLabel" name="label_eval_hint2">
        <property name="geometry">
         <rect>
-         <x>1260</x>
-         <y>140</y>
+         <x>1300</x>
+         <y>130</y>
          <width>301</width>
          <height>18</height>
         </rect>
@@ -4065,7 +4009,7 @@ border-radius: 8px;</string>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(88, 122, 244);</string>
+        <string notr="true"/>
        </property>
        <property name="text">
         <string>max：250</string>
@@ -4081,7 +4025,7 @@ border-radius: 8px;</string>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(88, 122, 244);</string>
+        <string notr="true"/>
        </property>
        <property name="text">
         <string>max：250</string>
@@ -4097,7 +4041,7 @@ border-radius: 8px;</string>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(88, 122, 244);</string>
+        <string notr="true"/>
        </property>
        <property name="text">
         <string>min：0</string>
@@ -4139,15 +4083,26 @@ border-radius: 8px;</string>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(88, 122, 244);</string>
+        <string notr="true"/>
        </property>
        <property name="text">
         <string>min：0</string>
        </property>
       </widget>
+      <widget class="Line" name="line_8">
+       <property name="geometry">
+        <rect>
+         <x>964</x>
+         <y>100</y>
+         <width>16</width>
+         <height>641</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
       <zorder>label_eval_bg</zorder>
-      <zorder>label_eval_panel_right</zorder>
-      <zorder>label_eval_panel_left</zorder>
       <zorder>label_eval_threshold1_title</zorder>
       <zorder>label_eval_threshold2_title</zorder>
       <zorder>pushButton_neureset</zorder>
@@ -4177,6 +4132,7 @@ border-radius: 8px;</string>
       <zorder>label_20</zorder>
       <zorder>label_6</zorder>
       <zorder>label_eval_t1_min</zorder>
+      <zorder>line_8</zorder>
      </widget>
      <widget class="QWidget" name="tab_3">
       <attribute name="title">

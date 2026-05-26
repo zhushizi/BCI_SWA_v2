@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QWidget
 
@@ -11,7 +11,14 @@ class ThresholdStepperWidget(QFrame):
     """
     阈值加减器：左按钮「−」、中间数值、右按钮「+」。
     兼容原滚轮接口（currentIndexChanged / set_current_index / current_index）。
+
+    valueChanged 立即发出（用于滑杆同步）；
+    currentIndexChanged 节流 1s 后发出（用于串口/评估帧下发）；
+    「+」「−」按钮 1s 内最多生效一次（滑杆 set_value 不受限）。
     """
+
+    INDEX_CHANGED_THROTTLE_MS = 1000
+    BUTTON_THROTTLE_MS = 1000
 
     valueChanged = Signal(int)
     currentIndexChanged = Signal(int)
@@ -48,6 +55,17 @@ class ThresholdStepperWidget(QFrame):
 
         self._minus_btn.clicked.connect(self._on_minus)
         self._plus_btn.clicked.connect(self._on_plus)
+
+        self._index_throttle_timer = QTimer(self)
+        self._index_throttle_timer.setSingleShot(True)
+        self._index_throttle_timer.setInterval(self.INDEX_CHANGED_THROTTLE_MS)
+        self._index_throttle_timer.timeout.connect(self._emit_index_changed)
+
+        self._button_cooldown_timer = QTimer(self)
+        self._button_cooldown_timer.setSingleShot(True)
+        self._button_cooldown_timer.setInterval(self.BUTTON_THROTTLE_MS)
+        self._button_cooldown_timer.timeout.connect(self._refresh)
+
         self._apply_style()
         self._refresh()
 
@@ -68,13 +86,25 @@ class ThresholdStepperWidget(QFrame):
     def setSingleStep(self, step: int) -> None:
         self.set_single_step(step)
 
-    def set_value(self, value: int) -> None:
+    def set_value(self, value: int, *, emit_index_changed: bool = True) -> None:
         v = max(self._min_value, min(self._max_value, int(value)))
         if v == self._value:
             return
         self._value = v
         self._refresh()
         self.valueChanged.emit(self._value)
+        if emit_index_changed:
+            self._schedule_index_changed()
+
+    def cancel_pending_index_changed(self) -> None:
+        self._index_throttle_timer.stop()
+        self._button_cooldown_timer.stop()
+        self._refresh()
+
+    def _schedule_index_changed(self) -> None:
+        self._index_throttle_timer.start(self.INDEX_CHANGED_THROTTLE_MS)
+
+    def _emit_index_changed(self) -> None:
         self.currentIndexChanged.emit(self.current_index())
 
     def setValue(self, value: int) -> None:
@@ -99,18 +129,35 @@ class ThresholdStepperWidget(QFrame):
         super().setEnabled(enabled)
         self._apply_style()
 
+    def changeEvent(self, event: QEvent) -> None:  # type: ignore[override]
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.EnabledChange:
+            self._refresh()
+
     def _on_minus(self) -> None:
+        if self._button_cooldown_timer.isActive():
+            return
         self.set_value(self._value - self._step)
+        self._arm_button_cooldown()
 
     def _on_plus(self) -> None:
+        if self._button_cooldown_timer.isActive():
+            return
         self.set_value(self._value + self._step)
+        self._arm_button_cooldown()
+
+    def _arm_button_cooldown(self) -> None:
+        self._button_cooldown_timer.start(self.BUTTON_THROTTLE_MS)
+        self._refresh()
 
     def _refresh(self) -> None:
         self._value_label.setText(str(self._value))
         at_min = self._value <= self._min_value
         at_max = self._value >= self._max_value
-        self._minus_btn.setEnabled(self.isEnabled() and not at_min)
-        self._plus_btn.setEnabled(self.isEnabled() and not at_max)
+        in_cooldown = self._button_cooldown_timer.isActive()
+        enabled = self.isEnabled() and not in_cooldown
+        self._minus_btn.setEnabled(enabled and not at_min)
+        self._plus_btn.setEnabled(enabled and not at_max)
 
     def _apply_style(self) -> None:
         if self.isEnabled():
