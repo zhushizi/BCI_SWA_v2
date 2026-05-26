@@ -26,7 +26,7 @@
    <string>Form</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">#Form { background-image: url(:/main/pic/main_background2.png); }</string>
+   <string notr="true"/>
   </property>
   <widget class="QLabel" name="label">
    <property name="geometry">
@@ -50,21 +50,21 @@
   <widget class="QTabWidget" name="tabWidget">
    <property name="geometry">
     <rect>
-     <x>-1</x>
-     <y>4</y>
-     <width>1921</width>
+     <x>0</x>
+     <y>0</y>
+     <width>1922</width>
      <height>1091</height>
     </rect>
    </property>
    <property name="minimumSize">
     <size>
-     <width>1921</width>
+     <width>1922</width>
      <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>1921</width>
+     <width>1922</width>
      <height>16777215</height>
     </size>
    </property>
