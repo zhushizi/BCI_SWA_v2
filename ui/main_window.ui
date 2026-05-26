@@ -270,7 +270,7 @@ QTabWidget#tabWidget_main QTabBar::tab {
 }</string>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -1968,7 +1968,7 @@ QTabBar::tab:hover:!selected {
 }</string>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab_set_system">
         <attribute name="title">
@@ -2182,7 +2182,7 @@ QTabBar::tab:hover:!selected {
           <string notr="true">color: #4A4A4A;</string>
          </property>
          <property name="text">
-          <string>ZNKL-MFR11AK-V1.0.0.0</string>
+          <string>ZNKL-MFR06AK-V1.0.0.0</string>
          </property>
         </widget>
         <widget class="QLabel" name="label_34">
@@ -2214,7 +2214,7 @@ QTabBar::tab:hover:!selected {
           <string notr="true">color: #4A4A4A;</string>
          </property>
          <property name="text">
-          <string>ZNKL-MFR11A-V1.0.0.0</string>
+          <string>ZNKL-MFR06A-V1.0.0.0</string>
          </property>
         </widget>
         <widget class="QLabel" name="label_43">

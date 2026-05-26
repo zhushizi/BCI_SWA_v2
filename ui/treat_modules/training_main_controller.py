@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import html
 import logging
 from typing import Callable, Optional
 
 from application.patient_app import PatientApp
-from application.session_app import SessionApp, pulsewidth_value_at_index, PULSEWIDTH_VALUES
+from application.session_app import SessionApp
 from application.training_main_app import TrainingMainApp
 from ui.widgets.bci_wave_widget import BCIWaveWidget
 from ui.widgets.power_bar_widget import PowerBarWidget
@@ -59,6 +58,9 @@ class TrainingMainController:
         self._reaction_curve_points: list[float] = []
         self._reaction_time_points: list[tuple[int, Optional[float]]] = []  # (trial_index, reaction_time or None)
         self._reaction_time_missing_sec = 5.0  # 无记录试次在图中用 5s 表示
+        self._trial_display = ""
+        self._complete_rate_display = ""
+        self._avg_reaction_display = ""
         self._last_session_id: Optional[int] = None
         self._countdown_timer = QTimer()
         self._countdown_timer.timeout.connect(self._tick_countdown)
@@ -84,9 +86,16 @@ class TrainingMainController:
         self._reaction_count = 0
         self._reaction_curve_points = []
         self._reaction_time_points = []
+        self._trial_display = ""
+        self._complete_rate_display = ""
+        self._avg_reaction_display = ""
         self._last_session_id = None
-        if self.training_app and self._current_patient_id:
-            self.training_app.set_current_patient(self._current_patient_id)
+        if self.training_app:
+            if self._current_patient_id:
+                self.training_app.set_current_patient(self._current_patient_id)
+            else:
+                self.training_app.set_current_patient("")
+        self._refresh_info_panel()
 
     def on_enter(self) -> None:
         """进入训练页：同一 session 内不重置 _pretrain_full_completed / _has_sent_paradigm_shut_down。"""
@@ -116,12 +125,6 @@ class TrainingMainController:
         return
 
     def _refresh_info_panel(self) -> None:
-        label = get_ui_attr(self.ui, "label_PatientInfo")
-        if label is None:
-            return
-        safe_call(self._logger, getattr(label, "setStyleSheet", None), "color: #939393;")
-        safe_call(self._logger, label.setWordWrap, True)
-
         patient = None
         if self.patient_app and self._current_patient_id:
             try:
@@ -129,93 +132,24 @@ class TrainingMainController:
             except Exception:
                 patient = None
 
-        session_data = None
-        treat_params = None
-        if self.session_app:
-            try:
-                session_data = self.session_app.get_current_patient_treat_session()
-            except Exception:
-                session_data = None
-            # 会话表中可能还未落库当前强度/脉冲宽度，从内存中的治疗参数补充显示
-            try:
-                if self._current_patient_id:
-                    treat_params = self.session_app.load_treat_params(self._current_patient_id)
-            except Exception:
-                treat_params = None
-
         name = (patient or {}).get("Name", "") if patient else ""
         sex = (patient or {}).get("Sex", "") if patient else ""
         age = (patient or {}).get("Age", "") if patient else ""
 
-        stim_intensity = (session_data or {}).get(
-            "ChannelIntensity",
-            (session_data or {}).get("StimIntensity", (session_data or {}).get("StimChannelBIntensity", "")),
-        )
-        pulsewidth = (session_data or {}).get(
-            "Pulsewidth",
-            (session_data or {}).get("PulseWidth", (session_data or {}).get("StimFreqAB", "")),
-        )
-
-        # 会话表无值时优先从当前内存治疗参数补充显示
-        if (stim_intensity is None or stim_intensity == "") and treat_params is not None:
-            try:
-                stim_intensity = getattr(treat_params, "channel_intensity", "") or ""
-            except Exception:
-                pass
-        if (pulsewidth is None or pulsewidth == "") and treat_params is not None:
-            try:
-                idx = getattr(treat_params, "pulsewidth_idx", None)
-                if idx is not None:  # 包括 0（档位 0 = 10 ms）
-                    pulsewidth = idx
-            except Exception:
-                pass
-        # 刺激部位目前固定为咽喉，不再依赖 StimPosition 字段
-        stim_position_raw = "咽喉"
-        paradigm = (session_data or {}).get("Paradigm", "")
-        stim_position = stim_position_raw or ""
-
-        def _pulse_width_display(raw) -> str:
-            """脉冲宽度：档位索引 0~27 或实际毫秒值映射为「N ms」显示。"""
-            if raw is None or raw == "":
-                return "—"
-            s = str(raw).strip()
-            if s.lower().startswith("0x"):
-                try:
-                    idx = int(s, 16)
-                    if 0 <= idx <= 0x1B:
-                        return f"{pulsewidth_value_at_index(idx)} ms"
-                except (TypeError, ValueError):
-                    pass
-                return s.upper()
-            try:
-                n = int(s)
-                if 0 <= n <= 0x1B:
-                    return f"{pulsewidth_value_at_index(n)} ms"
-                if n in PULSEWIDTH_VALUES:
-                    return f"{n} ms"
-                return "—"
-            except (TypeError, ValueError):
-                return "—"
-
         def _fmt(v) -> str:
             return "" if v is None or v == "" else str(v)
 
-        stim_intensity_display = _fmt(stim_intensity) if _fmt(stim_intensity) else "0"
-        pulse_width_display = _pulse_width_display(pulsewidth)
-
-        def _esc(s: str) -> str:
-            return html.escape(s) if s else ""
-
-        gap = "&nbsp;" * 10  # HTML 会合并普通空格，用 &nbsp; 保留同一行内间距
-        line1 = f"姓名: {_esc(_fmt(name))}{gap}性别: {_esc(_fmt(sex))}{gap}年龄: {_esc(_fmt(age))}"
-        rest = [
-            f"范式: {_esc(_fmt(paradigm))}{gap}刺激部位: {_esc(_fmt(stim_position))}",
-            f"电刺激强度: {_esc(stim_intensity_display)}",
-            f"脉冲宽度: {_esc(pulse_width_display)}",
-        ]
-        html_text = f'<div style="line-height: 2.0;"><b style="font-weight: bold;">{line1}</b><br/>' + "<br/>".join(rest) + "</div>"
-        safe_call(self._logger, label.setTextFormat, Qt.TextFormat.RichText)
-        safe_call(self._logger, label.setText, html_text)
+        values = {
+            "label_train_name_value": _fmt(name),
+            "label_train_sex_value": _fmt(sex),
+            "label_train_age_value": _fmt(age),
+            "label_train_trial_value": self._trial_display,
+            "label_train_complete_value": self._complete_rate_display,
+            "label_train_avg_value": self._avg_reaction_display,
+        }
+        for widget_name, value in values.items():
+            widget = get_ui_attr(self.ui, widget_name)
+            safe_call(self._logger, getattr(widget, "setText", None), value)
 
     def _init_wave_widget(self) -> None:
         host = get_ui_attr(self.ui, "widget_BCIWave")
@@ -324,15 +258,9 @@ class TrainingMainController:
         trial_index = payload.get("trial_index")
         complete_rate = payload.get("t_complete_r")
         reaction_time = payload.get("reaction_time")
+        self._trial_display = str(trial_index) if trial_index is not None else ""
+        self._complete_rate_display = str(complete_rate) if complete_rate is not None else ""
 
-        label_trial = get_ui_attr(self.ui, "label_trial")
-        safe_call(self._logger, getattr(label_trial, "setText", None), str(trial_index) if trial_index is not None else "")
-        label_complete = get_ui_attr(self.ui, "label_complete_rate")
-        safe_call(self._logger, getattr(label_complete, "setText", None), str(complete_rate) if complete_rate is not None else "")
-        label_reaction = get_ui_attr(self.ui, "label_reaction_rate")
-        safe_call(self._logger, getattr(label_reaction, "setText", None), str(reaction_time) if reaction_time is not None else "")
-
-        avg_label = get_ui_attr(self.ui, "label_reaction_rate_aver")
         try:
             session_id = None
             if self.session_app:
@@ -349,7 +277,7 @@ class TrainingMainController:
                 self._reaction_sum += float(reaction_time)
                 self._reaction_count += 1
                 avg_value = self._reaction_sum / max(self._reaction_count, 1)
-                safe_call(self._logger, getattr(avg_label, "setText", None), f"{avg_value:.3f}")
+                self._avg_reaction_display = f"{avg_value:.2f}"
                 if self.session_app:
                     self.session_app.update_average_reaction_time(avg_value)
                     curve_path = self._save_average_reaction_curve(avg_value, session_id)
@@ -360,6 +288,7 @@ class TrainingMainController:
                 self.session_app.update_reaction_time_curve(curve_path)
         except Exception:
             pass
+        self._refresh_info_panel()
 
     def start_countdown(self) -> None:
         if self._countdown_timer.isActive():
@@ -392,11 +321,13 @@ class TrainingMainController:
         self._reset_trial_and_countdown_labels()
 
     def _reset_trial_and_countdown_labels(self) -> None:
-        """收到 main.stop_session 时重置：label_trial / complete_rate / reaction_rate / reaction_rate_aver / Countdown。"""
-        empty = ""
-        for name in ("label_trial", "label_complete_rate", "label_reaction_rate", "label_reaction_rate_aver", "label_Countdown"):
-            label = get_ui_attr(self.ui, name)
-            safe_call(self._logger, getattr(label, "setText", None), empty)
+        """收到 main.stop_session 时重置训练信息显示值与倒计时。"""
+        self._trial_display = ""
+        self._complete_rate_display = ""
+        self._avg_reaction_display = ""
+        label_countdown = get_ui_attr(self.ui, "label_Countdown")
+        safe_call(self._logger, getattr(label_countdown, "setText", None), "")
+        self._refresh_info_panel()
 
     def _tick_countdown(self) -> None:
         if self._countdown_remaining <= 0:
