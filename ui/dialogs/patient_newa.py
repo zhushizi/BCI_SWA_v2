@@ -8,8 +8,19 @@ import logging
 from pathlib import Path
 from typing import Dict, Any
 
-from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import Qt, QDateTime
+from PySide6.QtWidgets import (
+    QApplication,
+    QDateTimeEdit,
+    QFrame,
+    QListWidget,
+    QListWidgetItem,
+    QMenu,
+    QSpinBox,
+    QToolButton,
+    QWidgetAction,
+)
+from PySide6.QtGui import QPalette
+from PySide6.QtCore import Qt, QDate, QDateTime
 from ui.core.base_dialog import BaseUiDialog
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
 from ui.dialogs.tips_dialog import TipsDialog
@@ -17,13 +28,15 @@ from ui.dialogs.tips_dialog import TipsDialog
 UI_ROOT = Path(__file__).resolve().parents[1]
 UI_PATH = UI_ROOT / "patient_newa.ui"
 
-# 日历弹窗月份下拉箭头样式（只注入一次，供 dateTimeEdit 的 calendarPopup 使用）
+# 日历弹窗月份/年份下拉箭头样式（只注入一次，供 dateTimeEdit 的 calendarPopup 使用）
 _CALENDAR_ARROW_STYLE = """
-QCalendarWidget QToolButton {
+QCalendarWidget QToolButton#qt_calendar_monthbutton,
+QCalendarWidget QToolButton#qt_calendar_yearbutton {
     padding-right: 20px;
     min-width: 60px;
 }
-QCalendarWidget QToolButton::menu-indicator {
+QCalendarWidget QToolButton#qt_calendar_monthbutton::menu-indicator,
+QCalendarWidget QToolButton#qt_calendar_yearbutton::menu-indicator {
     subcontrol-origin: padding;
     subcontrol-position: center right;
     right: 4px;
@@ -31,6 +44,10 @@ QCalendarWidget QToolButton::menu-indicator {
     height: 14px;
 }
 """
+
+_VISIT_YEAR_MIN = 2000
+_VISIT_YEAR_MAX = 2099
+_VISIT_YEAR_MENU_VISIBLE_COUNT = 10
 
 
 class PatientNewDialog(BaseUiDialog):
@@ -50,6 +67,8 @@ class PatientNewDialog(BaseUiDialog):
 
         date_edit = get_ui_attr(self.ui, "dateTimeEdit_visit")
         safe_call(self._logger, getattr(date_edit, "setDateTime", None), QDateTime.currentDateTime())
+        if isinstance(date_edit, QDateTimeEdit):
+            self._configure_visit_date_edit(date_edit)
 
         pid_input = get_ui_attr(self.ui, "lineEdit_patientId")
         auto_pid = QDateTime.currentDateTime().toString("yyMMddHHmmss")
@@ -83,13 +102,141 @@ class PatientNewDialog(BaseUiDialog):
 
     @classmethod
     def _apply_calendar_arrow_style(cls) -> None:
-        """为应用注入日历月份下拉箭头样式（只执行一次），修正箭头位置。"""
+        """为应用注入日历月份/年份下拉箭头样式（只执行一次），修正箭头位置。"""
         if getattr(cls, "_calendar_style_applied", False):
             return
         app = QApplication.instance()
         if app is not None:
             app.setStyleSheet((app.styleSheet() or "") + _CALENDAR_ARROW_STYLE)
             cls._calendar_style_applied = True
+
+    def _configure_visit_date_edit(self, date_edit: QDateTimeEdit) -> None:
+        """就诊日期：年份按钮与月份同为 QToolButton 下拉，列表约 10 行可滚轮。"""
+        calendar = date_edit.calendarWidget()
+        if calendar is None:
+            return
+
+        year_btn = calendar.findChild(QToolButton, "qt_calendar_yearbutton")
+        if year_btn is None:
+            return
+
+        month_btn = calendar.findChild(QToolButton, "qt_calendar_monthbutton")
+
+        year_spin = calendar.findChild(QSpinBox, "qt_calendar_yearedit")
+        if year_spin is not None:
+            year_spin.hide()
+
+        min_date = QDate(_VISIT_YEAR_MIN, 1, 1)
+        max_date = QDate(_VISIT_YEAR_MAX, 12, 31)
+        date_edit.setDateRange(min_date, max_date)
+        calendar.setDateRange(min_date, max_date)
+
+        current_year = date_edit.date().year()
+        current_year = max(_VISIT_YEAR_MIN, min(_VISIT_YEAR_MAX, current_year))
+
+        year_btn.setText(str(current_year))
+        year_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        year_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        if month_btn is not None:
+            year_btn.setFont(month_btn.font())
+            year_btn.setPalette(month_btn.palette())
+
+        def apply_calendar_year(year: int) -> None:
+            selected = calendar.selectedDate()
+            max_day = QDate(year, selected.month(), 1).daysInMonth()
+            calendar.setSelectedDate(
+                QDate(year, selected.month(), min(selected.day(), max_day))
+            )
+            year_btn.setText(str(year))
+
+        # QMenu 外壳与月份一致；内嵌固定高度列表（约 10 行），避免 100 个 QAction 撑满屏幕
+        menu = QMenu(year_btn)
+        month_menu = month_btn.menu() if month_btn is not None else None
+        if month_menu is not None:
+            menu.setStyle(month_menu.style())
+            menu.setFont(month_menu.font())
+            menu.setPalette(month_menu.palette())
+        elif month_btn is not None:
+            menu.setFont(month_btn.font())
+            menu.setPalette(month_btn.palette())
+
+        list_widget = QListWidget(menu)
+        list_widget.setFrameShape(QFrame.Shape.NoFrame)
+        list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_widget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        list_widget.setSpacing(0)
+        if month_menu is not None:
+            list_widget.setFont(month_menu.font())
+            list_widget.setPalette(month_menu.palette())
+            list_widget.setStyleSheet(self._year_list_style_from_menu(month_menu))
+            list_widget.setMinimumWidth(max(month_menu.sizeHint().width(), year_btn.sizeHint().width()))
+        elif month_btn is not None:
+            list_widget.setFont(month_btn.font())
+
+        row_height = list_widget.fontMetrics().height() + 6
+        list_widget.setFixedHeight(row_height * _VISIT_YEAR_MENU_VISIBLE_COUNT + 2)
+
+        for year in range(_VISIT_YEAR_MAX, _VISIT_YEAR_MIN - 1, -1):
+            item = QListWidgetItem(str(year))
+            item.setData(Qt.ItemDataRole.UserRole, year)
+            list_widget.addItem(item)
+
+        def on_year_item_clicked(item: QListWidgetItem) -> None:
+            year = item.data(Qt.ItemDataRole.UserRole)
+            if year is None:
+                return
+            try:
+                apply_calendar_year(int(year))
+            except (TypeError, ValueError):
+                return
+            menu.close()
+
+        list_widget.itemClicked.connect(on_year_item_clicked)
+
+        menu_action = QWidgetAction(menu)
+        menu_action.setDefaultWidget(list_widget)
+        menu.addAction(menu_action)
+        year_btn.setMenu(menu)
+
+        def scroll_year_list_to_current() -> None:
+            year = calendar.yearShown()
+            for row in range(list_widget.count()):
+                item = list_widget.item(row)
+                if item is not None and item.data(Qt.ItemDataRole.UserRole) == year:
+                    list_widget.setCurrentRow(row)
+                    list_widget.scrollToItem(item, Qt.ScrollHint.PositionAtCenter)
+                    break
+
+        menu.aboutToShow.connect(scroll_year_list_to_current)
+
+        def on_page_changed(year: int, _month: int) -> None:
+            year_btn.setText(str(year))
+
+        calendar.currentPageChanged.connect(on_page_changed)
+
+    @staticmethod
+    def _year_list_style_from_menu(month_menu: QMenu) -> str:
+        """列表项配色对齐月份 QMenu（系统菜单高亮/背景）。"""
+        pal = month_menu.palette()
+        bg = pal.color(QPalette.ColorRole.Window).name()
+        fg = pal.color(QPalette.ColorRole.WindowText).name()
+        hl = pal.color(QPalette.ColorRole.Highlight).name()
+        hlf = pal.color(QPalette.ColorRole.HighlightedText).name()
+        return f"""
+QListWidget {{
+    background-color: {bg};
+    color: {fg};
+    border: none;
+    outline: 0;
+}}
+QListWidget::item {{
+    padding: 4px 28px 4px 12px;
+}}
+QListWidget::item:selected {{
+    background-color: {hl};
+    color: {hlf};
+}}
+"""
 
     @staticmethod
     def _is_valid_id_card(s: str) -> bool:
