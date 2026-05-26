@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
-from PySide6.QtCore import Qt, Signal, QPointF, QRectF
+from PySide6.QtCore import QEvent, Qt, Signal, QPointF, QRectF
 from PySide6.QtGui import QColor, QLinearGradient, QMouseEvent, QPainter, QPainterPath, QPen, QBrush
 from PySide6.QtWidgets import QWidget
 
@@ -36,6 +36,8 @@ class SliderWidget(QWidget):
         self._track_fill_bottom = QColor(88, 122, 244)
         self._handle_color = QColor(88, 122, 244)
         self._handle_inner_color = QColor(255, 255, 255)
+        self._track_base_color = QColor(255, 255, 255)
+        self._apply_active_palette()
 
         # 默认允许薄横向条；竖向宿主在首次 resize 后会提高到 120
         self.setMinimumSize(40, 16)
@@ -62,6 +64,38 @@ class SliderWidget(QWidget):
 
     def value(self) -> int:
         return self._value
+
+    def _apply_active_palette(self) -> None:
+        self._track_border_color = QColor(224, 228, 235)
+        self._track_base_color = QColor(255, 255, 255)
+        self._track_fill_top = QColor(153, 178, 255)
+        self._track_fill_bottom = QColor(88, 122, 244)
+        self._handle_color = QColor(88, 122, 244)
+        self._handle_inner_color = QColor(255, 255, 255)
+
+    def _apply_disabled_palette(self) -> None:
+        self._track_border_color = QColor(220, 224, 230)
+        self._track_base_color = QColor(236, 238, 242)
+        self._track_fill_top = QColor(210, 216, 228)
+        self._track_fill_bottom = QColor(200, 206, 218)
+        self._handle_color = QColor(200, 206, 218)
+        self._handle_inner_color = QColor(245, 246, 248)
+
+    def _sync_visual_palette(self) -> None:
+        if self.isEnabled():
+            self._apply_active_palette()
+        else:
+            self._apply_disabled_palette()
+        self.update()
+
+    def setEnabled(self, enabled: bool) -> None:  # type: ignore[override]
+        super().setEnabled(enabled)
+        self._sync_visual_palette()
+
+    def changeEvent(self, event: QEvent) -> None:  # type: ignore[override]
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.EnabledChange:
+            self._sync_visual_palette()
 
     def _is_horizontal(self) -> bool:
         # UI 里把容器拉成“横条状”时自动切换绘制/交互方向
@@ -159,7 +193,7 @@ class SliderWidget(QWidget):
         path_track = QPainterPath()
         path_track.addRoundedRect(track_rect, radius, radius)
         painter.setPen(QPen(self._track_border_color, 1))
-        painter.setBrush(QBrush(Qt.white))
+        painter.setBrush(QBrush(self._track_base_color))
         painter.drawPath(path_track)
 
         # 填充部分：竖直为顶部到手柄；横向为左侧到手柄

@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Iterable, Optional
 from datetime import datetime
 
 from PySide6.QtCore import QObject, QEvent, Qt, QTimer
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLabel, QPushButton
 
 from ui.dialogs.tips_dialog import TipsDialog
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
@@ -95,6 +95,86 @@ class _Threshold1GuardFilter(QObject):
         return False
 
 
+# 评估页 tab_6：阈值一 / 阈值二 列内控件（调节其一列时另一列全部置灰）
+_THRESHOLD1_COLUMN_WIDGETS = (
+    "label_eval_threshold1_title",
+    "label_eval_tip1",
+    "label_eval_hint1",
+    "widget_threshold1_wheel",
+    "widget_threshold1_slider",
+    "label_eval_t1_min",
+    "label_eval_t1_max",
+    "label_eval_wave_square_title",
+    "label_squarewave",
+    "label_6",
+)
+_EVAL_TITLE_STYLE_ACTIVE = "color: #333333;"
+_EVAL_TITLE_STYLE_DISABLED = "color: #C8CCD3;"
+_EVAL_ACCENT_STYLE_ACTIVE = "color: rgb(88, 122, 244);"
+_EVAL_ACCENT_STYLE_DISABLED = "color: #C8CCD3;"
+_EVAL_HINT_STYLE_ACTIVE = "color: #666666;"
+_EVAL_HINT_STYLE_DISABLED = "color: #C8CCD3;"
+_EVAL_WAVE_TITLE_STYLE_DISABLED = "color: #C8CCD3;"
+_EVAL_WAVE_LABEL_BG_ACTIVE = "background-color: rgb(221, 221, 221);"
+_EVAL_WAVE_LABEL_BG_DISABLED = "background-color: #ECECEC;"
+_EVAL_HOST_STYLE_TRANSPARENT = "background-color: transparent;"
+_EVAL_WHEEL_HOST_STYLE_DISABLED = "background-color: #ECECEC; border-radius: 6px;"
+_THRESHOLD1_BEGIN_BTN_STYLE_INITIAL = (
+    "QPushButton {"
+    "    background-color: #789EFF;"
+    "    color: white;"
+    "    border-radius: 10px;"
+    "    border: none;"
+    "}"
+)
+_THRESHOLD1_BEGIN_BTN_STYLE_STEP1 = (
+    "QPushButton {"
+    "    background-color: #F48438;"
+    "    color: white;"
+    "    border-radius: 10px;"
+    "    border: none;"
+    "}"
+)
+_THRESHOLD1_BEGIN_BTN_STYLE_DISABLED = (
+    "QPushButton {"
+    "    background-color: #E5E7EB;"
+    "    color: #C8CCD3;"
+    "    border-radius: 10px;"
+    "    border: none;"
+    "}"
+)
+_THRESHOLD2_COMPLETE_BTN_STYLE_ACTIVE = (
+    "QPushButton {"
+    "    background-color: #789EFF;"
+    "    color: white;"
+    "    border-radius: 10px;"
+    "    border: none;"
+    "}"
+)
+_THRESHOLD2_COMPLETE_BTN_STYLE_DISABLED = (
+    "QPushButton {"
+    "    background-color: #E5E7EB;"
+    "    color: #C8CCD3;"
+    "    border-radius: 10px;"
+    "    border: none;"
+    "}"
+)
+
+_THRESHOLD2_COLUMN_WIDGETS = (
+    "label_eval_threshold2_title",
+    "label_eval_tip2",
+    "label_eval_hint2",
+    "widget_threshold2_wheel",
+    "widget_threshold2_slider",
+    "label_eval_t2_min",
+    "label_eval_t2_max",
+    "label_eval_t1_max_2",
+    "label_eval_wave_sharp_title",
+    "label_sharpwave",
+    "label_20",
+)
+
+
 class TreatNavigation:
     # 阈值1 滚轮/滑杆：0-250，步长1
     THRESHOLD1_MIN = 0
@@ -110,7 +190,7 @@ class TreatNavigation:
         self._host = host
         self.ui = host.ui
         self._logger = host._logger
-        # 神经评估步骤：0=初始 仅开始测试可点，1=step1 阈值1，2=step2 阈值2
+        # 神经评估步骤：0=初始，1=调节阈值1，2=调节阈值2，3=评估完成（两列置灰，仅重置回初始）
         self._neu_step = 0
         self._threshold1_wheel: Optional[ThresholdStepperWidget] = None
         self._threshold2_wheel: Optional[ThresholdStepperWidget] = None
@@ -475,14 +555,7 @@ class TreatNavigation:
             # 点击开始测试时，高亮按钮背景为 #F48438
             begin_btn = get_ui_attr(self.ui, "pushButton_threshold1_begin")
             if begin_btn is not None:
-                begin_btn.setStyleSheet(
-                    "QPushButton {"
-                    "    background-color: #F48438;"
-                    "    color: white;"
-                    "    border-radius: 10px;"
-                    "    border: none;"
-                    "}"
-                )
+                begin_btn.setStyleSheet(_THRESHOLD1_BEGIN_BTN_STYLE_STEP1)
             self._reset_neu_threshold_spinboxes()
             self._send_neu_eval_frame()
             self._send_neu_start_command_frame()
@@ -514,7 +587,7 @@ class TreatNavigation:
     def on_threshold2_complete_clicked(self) -> None:
         self._update_neu_alpha_eval_result()
         self._send_neu_stop_command_frame()
-        self._set_neu_tab_initial_state()
+        self._set_neu_tab_eval_completed_state()
         self._stop_eval_waves()
 
     def on_threshold1_value_changed(self, _value: int) -> None:
@@ -869,6 +942,99 @@ class TreatNavigation:
             self.ui, "pushButton__threshold2_complete"
         )
 
+    def _apply_eval_widget_visual(self, name: str, enabled: bool) -> None:
+        widget = get_ui_attr(self.ui, name)
+        if widget is None:
+            return
+        widget.setEnabled(enabled)
+        if name in ("label_eval_threshold1_title", "label_eval_threshold2_title"):
+            widget.setStyleSheet(
+                _EVAL_TITLE_STYLE_ACTIVE if enabled else _EVAL_TITLE_STYLE_DISABLED
+            )
+        elif name in ("label_eval_hint1", "label_eval_hint2"):
+            widget.setStyleSheet(
+                _EVAL_HINT_STYLE_ACTIVE if enabled else _EVAL_HINT_STYLE_DISABLED
+            )
+        elif name in (
+            "label_eval_t1_min",
+            "label_eval_t1_max",
+            "label_eval_t2_min",
+            "label_eval_t2_max",
+            "label_eval_t1_max_2",
+        ):
+            widget.setStyleSheet(
+                _EVAL_ACCENT_STYLE_ACTIVE if enabled else _EVAL_ACCENT_STYLE_DISABLED
+            )
+        elif name in ("label_eval_wave_square_title", "label_eval_wave_sharp_title"):
+            widget.setStyleSheet("" if enabled else _EVAL_WAVE_TITLE_STYLE_DISABLED)
+        elif name in ("label_6", "label_20"):
+            widget.setStyleSheet(
+                "color: #333333;" if enabled else _EVAL_WAVE_TITLE_STYLE_DISABLED
+            )
+        elif name in ("label_squarewave", "label_sharpwave"):
+            widget.setStyleSheet(
+                _EVAL_WAVE_LABEL_BG_ACTIVE if enabled else _EVAL_WAVE_LABEL_BG_DISABLED
+            )
+        elif name == "pushButton__threshold2_complete" and isinstance(widget, QPushButton):
+            widget.setStyleSheet(
+                _THRESHOLD2_COMPLETE_BTN_STYLE_ACTIVE
+                if enabled
+                else _THRESHOLD2_COMPLETE_BTN_STYLE_DISABLED
+            )
+
+    def _set_widgets_enabled(self, names: Iterable[str], enabled: bool) -> None:
+        for name in names:
+            self._apply_eval_widget_visual(name, enabled)
+
+    def _set_wheel_host_visual(self, host_name: str, enabled: bool) -> None:
+        host = get_ui_attr(self.ui, host_name)
+        if host is not None:
+            host.setEnabled(enabled)
+            host.setStyleSheet(
+                _EVAL_HOST_STYLE_TRANSPARENT
+                if enabled
+                else _EVAL_WHEEL_HOST_STYLE_DISABLED
+            )
+
+    def _set_slider_host_enabled(self, host_name: str, enabled: bool) -> None:
+        """滑杆宿主仅同步 enabled，背景始终透明（置灰由 SliderWidget 自绘轨道体现）。"""
+        host = get_ui_attr(self.ui, host_name)
+        if host is not None:
+            host.setEnabled(enabled)
+            host.setStyleSheet(_EVAL_HOST_STYLE_TRANSPARENT)
+
+    def _set_threshold1_column_enabled(self, enabled: bool) -> None:
+        """阈值一列：标题、提示、加减器、滑杆、min/max、方波区等（含置灰配色）。"""
+        self._set_widgets_enabled(_THRESHOLD1_COLUMN_WIDGETS, enabled)
+        self._set_wheel_host_visual("widget_threshold1_wheel", enabled)
+        self._set_slider_host_enabled("widget_threshold1_slider", enabled)
+        if self._threshold1_wheel is not None:
+            self._threshold1_wheel.setEnabled(enabled)
+        if self._threshold1_slider is not None:
+            self._threshold1_slider.setEnabled(enabled)
+        if self._wave_square is not None:
+            self._wave_square.setEnabled(enabled)
+
+    def _set_threshold2_column_enabled(self, enabled: bool) -> None:
+        """阈值二列：标题、提示、加减器、滑杆、min/max、尖波区、完成按钮等（含置灰配色）。"""
+        self._set_widgets_enabled(_THRESHOLD2_COLUMN_WIDGETS, enabled)
+        self._set_wheel_host_visual("widget_threshold2_wheel", enabled)
+        self._set_slider_host_enabled("widget_threshold2_slider", enabled)
+        complete_btn = self._get_threshold2_complete_button()
+        if complete_btn is not None:
+            complete_btn.setEnabled(enabled)
+            complete_btn.setStyleSheet(
+                _THRESHOLD2_COMPLETE_BTN_STYLE_ACTIVE
+                if enabled
+                else _THRESHOLD2_COMPLETE_BTN_STYLE_DISABLED
+            )
+        if self._threshold2_wheel is not None:
+            self._threshold2_wheel.setEnabled(enabled)
+        if self._threshold2_slider is not None:
+            self._threshold2_slider.setEnabled(enabled)
+        if self._wave_sharp is not None:
+            self._wave_sharp.setEnabled(enabled)
+
     def _set_neu_tab_initial_state(self) -> None:
         self._neu_step = 0
         begin_btn = get_ui_attr(self.ui, "pushButton_threshold1_begin")
@@ -878,41 +1044,15 @@ class TreatNavigation:
         if begin_btn is not None:
             begin_btn.setEnabled(True)
             begin_btn.setText("开始测试")
-            # 恢复初始配色（与 .ui 中保持一致）
-            begin_btn.setStyleSheet(
-                "QPushButton {"
-                "    background-color: #789EFF;"
-                "    color: white;"
-                "    border-radius: 10px;"
-                "    border: none;"
-                "}"
-            )
+            begin_btn.setStyleSheet(_THRESHOLD1_BEGIN_BTN_STYLE_INITIAL)
         if reset_btn is not None:
             reset_btn.setEnabled(False)
         if next_btn is not None:
             next_btn.setEnabled(True)
+        self._set_threshold1_column_enabled(True)
+        self._set_threshold2_column_enabled(False)
         if threshold2_complete_btn is not None:
             threshold2_complete_btn.setEnabled(False)
-        host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
-        if host_wheel is not None:
-            host_wheel.setEnabled(True)
-        if self._threshold1_wheel is not None:
-            self._threshold1_wheel.setEnabled(True)
-        host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
-        if host_wheel2 is not None:
-            host_wheel2.setEnabled(False)
-        if self._threshold2_wheel is not None:
-            self._threshold2_wheel.setEnabled(False)
-        host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
-        if host_slider1 is not None:
-            host_slider1.setEnabled(True)
-        if self._threshold1_slider is not None:
-            self._threshold1_slider.setEnabled(True)
-        host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
-        if host_slider2 is not None:
-            host_slider2.setEnabled(False)
-        if self._threshold2_slider is not None:
-            self._threshold2_slider.setEnabled(False)
 
         self._stop_eval_waves()
         self._hide_neu_mask()
@@ -926,32 +1066,15 @@ class TreatNavigation:
         if begin_btn is not None:
             begin_btn.setEnabled(True)
             begin_btn.setText("阈值1完成")
+            begin_btn.setStyleSheet(_THRESHOLD1_BEGIN_BTN_STYLE_STEP1)
         if reset_btn is not None:
             reset_btn.setEnabled(True)
         if next_btn is not None:
             next_btn.setEnabled(False)
+        self._set_threshold1_column_enabled(True)
+        self._set_threshold2_column_enabled(False)
         if threshold2_complete_btn is not None:
             threshold2_complete_btn.setEnabled(False)
-        host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
-        if host_wheel is not None:
-            host_wheel.setEnabled(True)
-        if self._threshold1_wheel is not None:
-            self._threshold1_wheel.setEnabled(True)
-        host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
-        if host_wheel2 is not None:
-            host_wheel2.setEnabled(False)
-        if self._threshold2_wheel is not None:
-            self._threshold2_wheel.setEnabled(False)
-        host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
-        if host_slider1 is not None:
-            host_slider1.setEnabled(True)
-        if self._threshold1_slider is not None:
-            self._threshold1_slider.setEnabled(True)
-        host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
-        if host_slider2 is not None:
-            host_slider2.setEnabled(False)
-        if self._threshold2_slider is not None:
-            self._threshold2_slider.setEnabled(False)
 
         self._hide_neu_mask()
 
@@ -963,71 +1086,39 @@ class TreatNavigation:
         threshold2_complete_btn = self._get_threshold2_complete_button()
         if begin_btn is not None:
             begin_btn.setEnabled(False)
+            begin_btn.setText("阈值1完成")
+            begin_btn.setStyleSheet(_THRESHOLD1_BEGIN_BTN_STYLE_DISABLED)
         if reset_btn is not None:
             reset_btn.setEnabled(True)
         if next_btn is not None:
             next_btn.setEnabled(False)
+        self._set_threshold1_column_enabled(False)
+        self._set_threshold2_column_enabled(True)
         if threshold2_complete_btn is not None:
             threshold2_complete_btn.setEnabled(True)
-        host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
-        if host_wheel is not None:
-            host_wheel.setEnabled(False)
-        if self._threshold1_wheel is not None:
-            self._threshold1_wheel.setEnabled(False)
-        host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
-        if host_wheel2 is not None:
-            host_wheel2.setEnabled(True)
-        if self._threshold2_wheel is not None:
-            self._threshold2_wheel.setEnabled(True)
-        host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
-        if host_slider1 is not None:
-            host_slider1.setEnabled(False)
-        if self._threshold1_slider is not None:
-            self._threshold1_slider.setEnabled(False)
-        host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
-        if host_slider2 is not None:
-            host_slider2.setEnabled(True)
-        if self._threshold2_slider is not None:
-            self._threshold2_slider.setEnabled(True)
 
         self._hide_neu_mask()
 
-    def _set_neu_tab_stopped_state(self) -> None:
-        self._neu_step = 0
+    def _set_neu_tab_eval_completed_state(self) -> None:
+        """阈值2 完成：阈值1 保持置灰，阈值2 亦锁定；仅「重置」恢复初始。"""
+        self._neu_step = 3
         begin_btn = get_ui_attr(self.ui, "pushButton_threshold1_begin")
         reset_btn = get_ui_attr(self.ui, "pushButton_neureset")
         next_btn = get_ui_attr(self.ui, "pushButton_neunext")
         threshold2_complete_btn = self._get_threshold2_complete_button()
         if begin_btn is not None:
             begin_btn.setEnabled(False)
+            begin_btn.setText("开始测试")
+            begin_btn.setStyleSheet(_THRESHOLD1_BEGIN_BTN_STYLE_DISABLED)
         if reset_btn is not None:
             reset_btn.setEnabled(True)
         if next_btn is not None:
-            next_btn.setEnabled(False)
+            next_btn.setEnabled(True)
         if threshold2_complete_btn is not None:
             threshold2_complete_btn.setEnabled(False)
-        host_wheel = get_ui_attr(self.ui, "widget_threshold1_wheel")
-        if host_wheel is not None:
-            host_wheel.setEnabled(True)
-        if self._threshold1_wheel is not None:
-            self._threshold1_wheel.setEnabled(True)
-        host_wheel2 = get_ui_attr(self.ui, "widget_threshold2_wheel")
-        if host_wheel2 is not None:
-            host_wheel2.setEnabled(False)
-        if self._threshold2_wheel is not None:
-            self._threshold2_wheel.setEnabled(False)
-        host_slider1 = get_ui_attr(self.ui, "widget_threshold1_slider")
-        if host_slider1 is not None:
-            host_slider1.setEnabled(True)
-        if self._threshold1_slider is not None:
-            self._threshold1_slider.setEnabled(True)
-        host_slider2 = get_ui_attr(self.ui, "widget_threshold2_slider")
-        if host_slider2 is not None:
-            host_slider2.setEnabled(False)
-        if self._threshold2_slider is not None:
-            self._threshold2_slider.setEnabled(False)
+        self._set_threshold1_column_enabled(False)
+        self._set_threshold2_column_enabled(False)
 
-        self._stop_eval_waves()
         self._hide_neu_mask()
 
     def sync_preprocess_title_by_sub_tab(self) -> None:

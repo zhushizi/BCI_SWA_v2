@@ -166,10 +166,10 @@ class ThresholdStepperWidget(QFrame):
             fg = "#5B7CFF"
             sep = "#E5E7EB"
         else:
-            bg = "#F7F7F7"
-            border = "#ECECEC"
-            fg = "#C8CCD3"
-            sep = "#EEEEEE"
+            bg = "#ECECEC"
+            border = "#E0E3E8"
+            fg = "#C5CAD3"
+            sep = "#E0E3E8"
 
         self.setStyleSheet(
             f"QFrame#thresholdStepper {{ background: {bg}; border: 1px solid {border}; border-radius: 8px; }}"

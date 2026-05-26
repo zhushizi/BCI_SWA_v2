@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from PySide6.QtCore import QPointF, Qt, QTimer
+from PySide6.QtCore import QEvent, QPointF, Qt, QTimer
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QWidget
 
@@ -16,21 +16,45 @@ class EvalWaveKind(Enum):
 class EvalWaveWidget(QWidget):
     """评估页波形预览：方波/尖波铺满控件宽度，可选简单滚动动画。"""
 
+    _BG_ACTIVE = "#DDDDDD"
+    _WAVE_ACTIVE = "#789EFF"
+    _BG_DISABLED = "#ECECEC"
+    _WAVE_DISABLED = "#C5CAD3"
+
     def __init__(self, kind: EvalWaveKind, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._kind = kind
         self._phase = 0.0
         self._animating = False
-        self._bg_color = QColor("#DDDDDD")
-        self._wave_color = QColor("#789EFF")
+        self._bg_color = QColor(self._BG_ACTIVE)
+        self._wave_color = QColor(self._WAVE_ACTIVE)
         self._timer = QTimer(self)
         self._timer.setInterval(40)
         self._timer.timeout.connect(self._on_tick)
         self.setMinimumHeight(60)
 
     def set_background_color(self, color: str) -> None:
-        self._bg_color = QColor(color)
+        if self.isEnabled():
+            self._bg_color = QColor(color)
+            self.update()
+
+    def _sync_visual_palette(self) -> None:
+        if self.isEnabled():
+            self._bg_color = QColor(self._BG_ACTIVE)
+            self._wave_color = QColor(self._WAVE_ACTIVE)
+        else:
+            self._bg_color = QColor(self._BG_DISABLED)
+            self._wave_color = QColor(self._WAVE_DISABLED)
         self.update()
+
+    def setEnabled(self, enabled: bool) -> None:  # type: ignore[override]
+        super().setEnabled(enabled)
+        self._sync_visual_palette()
+
+    def changeEvent(self, event: QEvent) -> None:  # type: ignore[override]
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.EnabledChange:
+            self._sync_visual_palette()
 
     def start_animation(self) -> None:
         self._animating = True
