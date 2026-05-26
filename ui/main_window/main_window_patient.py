@@ -641,10 +641,11 @@ class PatientPageController(BaseTableController):
                 clear_ctx(patient_id)
         return ok
 
-    def _open_new_patient_dialog(self):
+    def open_new_patient_dialog(self) -> bool:
+        """打开新建患者弹窗；成功新增并已选中时返回 True。"""
         dialog = PatientNewDialog(self.parent)
         if dialog.exec() != QDialog.Accepted:
-            return
+            return False
 
         data = dialog.get_data()
         if self.user_app and self.user_app.current_user:
@@ -653,21 +654,25 @@ class PatientPageController(BaseTableController):
         if not data.get("VisitTime"):
             data["VisitTime"] = QDateTime.currentDateTime().toString("yyyy/MM/dd HH:mm:ss")
 
-        ok = False
         try:
             ok = self.patient_app.add_patient(data)
         except Exception as e:
             self.logger.error(f"新增患者异常: {e}")
             TipsDialog.show_tips(self.parent, f"新增患者失败: {e}")
-            return
+            return False
 
         if ok:
             TipsDialog.show_tips(self.parent, "新增患者成功")
             self.refresh()
             if callable(self._on_patient_selected):
                 self._on_patient_selected(data)
-        else:
-            TipsDialog.show_tips(self.parent, "新增患者失败")
+            return True
+
+        TipsDialog.show_tips(self.parent, "新增患者失败")
+        return False
+
+    def _open_new_patient_dialog(self) -> None:
+        self.open_new_patient_dialog()
 
     def _on_row_checkbox_changed(self, row: int, state: int):
         if self._bulk_updating_checks:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable, Optional
+
 """
 治疗页控制器（页面编排层）
 
@@ -49,10 +51,12 @@ class TreatPageController:
         training_flow_app=None,
         paradigm_exe_path: str | None = None,
         hide_subprocess_console: bool = False,
+        on_evaluation_completed: Optional[Callable[[], None]] = None,
     ):
         self.ui = ui
         self._logger = logging.getLogger(__name__)
         self._on_return_home = on_return_home
+        self._on_evaluation_completed = on_evaluation_completed
         self.sub_window = sub_window
         self.patient_app = patient_app
         self.session_app = session_app

@@ -139,6 +139,7 @@ class MainWindow(QWidget):
             self, self.ui, self.scheme_app, self.logger,
             on_plan_new_clicked=self._switch_to_evaluate_page,
         )
+        self.treat_controller._on_evaluation_completed = self.plan_controller.refresh
         self.decoder_port = decoder_port
         self.set_controller = SetPageController(
             self,
@@ -295,10 +296,9 @@ class MainWindow(QWidget):
 
     def _switch_to_evaluate_page(self):
         """切换到治疗页并显示评估页（tab_6），供 pushButton_plan_new 使用。"""
-        # 若尚未选择患者，先弹出患者选择对话框
         if not getattr(self, "_selected_patient", None):
-            self._treat_flow.open_patient_select_dialog()
-        # 用户可能在对话框中取消，此时不进入评估页
+            if getattr(self, "patient_controller", None):
+                self.patient_controller.open_new_patient_dialog()
         if not getattr(self, "_selected_patient", None):
             return
         if self.treat_controller:

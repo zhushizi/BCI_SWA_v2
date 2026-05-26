@@ -403,7 +403,14 @@ class TreatNavigation:
         if threshold1 == 0 and threshold2 == 0:
             if not TipsDialog.show_confirm(self.ui.window() if self.ui else None, "未进行评估是否返回"):
                 return
-        self._save_neu_eval_to_db()
+        if not self._save_neu_eval_to_db():
+            return
+        on_completed = getattr(self._host, "_on_evaluation_completed", None)
+        if callable(on_completed):
+            try:
+                on_completed()
+            except Exception:
+                self._logger.exception("评估完成后刷新方案表失败")
         # 切换到 tabWidget_main 下 tabWidget 的 tab_plan 页面
         main_tab = get_ui_attr(self.ui, "tabWidget_main")
         if main_tab is not None:
@@ -578,13 +585,13 @@ class TreatNavigation:
         # 将 0-500 映射到 0-250
         return wheel_value // 2
 
-    def _save_neu_eval_to_db(self) -> None:
+    def _save_neu_eval_to_db(self) -> bool:
         """
         将评估结果写入 EvaluationManager 表（EvaluationID 累加）。
         """
         scheme_app = getattr(self._host, "scheme_app", None)
         if scheme_app is None:
-            return
+            return False
 
         # 当前患者 ID
         patient = getattr(self._host, "_current_patient", None)
@@ -603,7 +610,7 @@ class TreatNavigation:
                 except Exception:
                     patient_id = None
         if not patient_id:
-            return
+            return False
 
         threshold1 = self._get_threshold1_value()
         # 阈值2：入库时记录滚轮上的实际显示值（0-500，步长 2）
@@ -619,16 +626,19 @@ class TreatNavigation:
         evaluation_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         try:
-            scheme_app.add_evaluation_record(
-                patient_id=patient_id,
-                threshold1=threshold1,
-                threshold2=threshold2,
-                alpha=alpha,
-                evaluation_time=evaluation_time,
-                evaluation_result=eval_result,
+            return bool(
+                scheme_app.add_evaluation_record(
+                    patient_id=patient_id,
+                    threshold1=threshold1,
+                    threshold2=threshold2,
+                    alpha=alpha,
+                    evaluation_time=evaluation_time,
+                    evaluation_result=eval_result,
+                )
             )
         except Exception:
             self._logger.exception("保存评估结果到 EvaluationManager 失败")
+            return False
 
     def _save_neu_eval_to_session(self) -> None:
         session_app = getattr(self._host, "session_app", None)
