@@ -21,7 +21,7 @@ class EvalWaveWidget(QWidget):
         self._kind = kind
         self._phase = 0.0
         self._animating = False
-        self._bg_color = QColor("#E5E9F7")
+        self._bg_color = QColor("#DDDDDD")
         self._wave_color = QColor("#789EFF")
         self._timer = QTimer(self)
         self._timer.setInterval(40)
@@ -109,28 +109,29 @@ class EvalWaveWidget(QWidget):
     def _build_sharp_path(
         self, left: float, width: float, mid_y: float, amp: float, scroll: float
     ) -> QPainterPath:
+        """
+        尖波：与方波共用 cycles / half，每个三角只占 half 宽度（与方波平台段等宽），
+        这样同宽度下峰数与方波一致。
+        """
         high = mid_y - amp
         low = mid_y + amp
         cycles = self._cycle_count(width)
-        period = width / cycles
-        half = period / 2.0
+        half = width / (cycles * 2)
 
         path = QPainterPath()
-        x = left - (scroll % period)
-        up = True
-        path.moveTo(x, high if up else low)
+        x = left - (scroll % (half * 2))
+        path.moveTo(x, high)
 
-        total_steps = cycles + 2
-        for _ in range(total_steps):
-            x_mid = x + half
-            x_end = x + period
-            if up:
-                path.lineTo(x_mid, low)
-                path.lineTo(x_end, high)
-            else:
-                path.lineTo(x_mid, high)
+        total_steps = cycles * 2 + 2
+        for i in range(total_steps):
+            x_mid = x + half * 0.5
+            x_end = x + half
+            if i % 2 == 0:
+                path.lineTo(x_mid, mid_y)
                 path.lineTo(x_end, low)
+            else:
+                path.lineTo(x_mid, mid_y)
+                path.lineTo(x_end, high)
             x = x_end
-            up = not up
 
         return path

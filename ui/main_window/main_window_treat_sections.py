@@ -15,7 +15,6 @@ from ui.core.utils import get_ui_attr, safe_call, safe_connect
 from ui.widgets.eval_wave_widget import EvalWaveKind, EvalWaveWidget
 from ui.widgets.slider_widget import SliderWidget
 from ui.widgets.threshold_stepper_widget import ThresholdStepperWidget
-from ui.widgets.wheel_widget import WheelWidget
 from service.business.hardware.dd_ack_retry import DdAckRetrySender
 
 
@@ -101,7 +100,7 @@ class TreatNavigation:
         # 神经评估步骤：0=初始 仅开始测试可点，1=step1 阈值1，2=step2 阈值2
         self._neu_step = 0
         self._threshold1_wheel: Optional[ThresholdStepperWidget] = None
-        self._threshold2_wheel: Optional[WheelWidget] = None
+        self._threshold2_wheel: Optional[ThresholdStepperWidget] = None
         self._threshold1_slider: Optional[SliderWidget] = None
         self._threshold2_slider: Optional[SliderWidget] = None
         self._neu_mask: Optional[QLabel] = None
@@ -203,7 +202,18 @@ class TreatNavigation:
         return wave
 
     def _sync_eval_wave_geometry(self) -> None:
-        """label 布局变化后，同步波形控件尺寸以铺满。"""
+        """label 布局变化后，同步波形控件尺寸以铺满；尖波与方波显示区域一致。"""
+        square_label = get_ui_attr(self.ui, "label_squarewave")
+        sharp_label = get_ui_attr(self.ui, "label_sharpwave")
+        wave_bg = "background-color: rgb(221, 221, 221);"
+        if square_label is not None:
+            square_label.setStyleSheet(wave_bg)
+        if sharp_label is not None and square_label is not None:
+            sq_geo = square_label.geometry()
+            sh_geo = sharp_label.geometry()
+            sharp_label.setStyleSheet(wave_bg)
+            sharp_label.setGeometry(sh_geo.x(), sh_geo.y(), sq_geo.width(), sq_geo.height())
+
         pairs = (
             ("label_squarewave", self._wave_square),
             ("label_sharpwave", self._wave_sharp),
@@ -214,6 +224,7 @@ class TreatNavigation:
             label = get_ui_attr(self.ui, label_name)
             if label is not None:
                 wave.setGeometry(label.geometry())
+                wave.set_background_color("#DDDDDD")
                 wave.raise_()
 
     def _init_eval_waves(self) -> None:
@@ -224,7 +235,7 @@ class TreatNavigation:
             )
         if self._wave_sharp is None:
             self._wave_sharp = self._mount_eval_wave(
-                "label_sharpwave", EvalWaveKind.SHARP, "#E5E9F7"
+                "label_sharpwave", EvalWaveKind.SHARP, "#DDDDDD"
             )
 
     def _stop_eval_waves(self) -> None:
@@ -258,19 +269,19 @@ class TreatNavigation:
         host.setEnabled(False)
 
     def _init_threshold2_wheel(self) -> None:
-        """在 widget_threshold2_wheel 中创建滚轮控件，范围 0-500 步长 2，初始值 2。"""
+        """在 widget_threshold2_wheel 中创建「按钮 + 数值」加减器，范围 0-500 步长 2，初始值 2。"""
         if self._threshold2_wheel is not None:
             return
         host = get_ui_attr(self.ui, "widget_threshold2_wheel")
         if host is None:
             return
         host.setCursor(Qt.CursorShape.PointingHandCursor)
-        wheel = WheelWidget(host)
-        wheel.setGeometry(host.rect())
-        values = [str(i) for i in range(self.THRESHOLD2_MIN, self.THRESHOLD2_MAX + 1, self.THRESHOLD2_STEP)]
-        wheel.set_values(values)
-        wheel.set_current_index(1)  # 索引 1 对应数值 2
-        self._threshold2_wheel = wheel
+        stepper = ThresholdStepperWidget(host)
+        stepper.setGeometry(host.rect())
+        stepper.set_range(self.THRESHOLD2_MIN, self.THRESHOLD2_MAX)
+        stepper.set_single_step(self.THRESHOLD2_STEP)
+        stepper.set_value(2)
+        self._threshold2_wheel = stepper
         host.setEnabled(False)
 
     def _init_threshold1_slider(self) -> None:
@@ -313,12 +324,20 @@ class TreatNavigation:
         threshold2_count = (self.THRESHOLD2_MAX - self.THRESHOLD2_MIN) // self.THRESHOLD2_STEP + 1
         slider.set_range(0, threshold2_count - 1)
         slider.set_value(1)
-        wheel = self._threshold2_wheel
-        if wheel is not None:
-            def on_slider_value_changed(v: int) -> None:
-                wheel.set_current_index(v)
+        stepper = self._threshold2_wheel
+        if stepper is not None:
+            def on_slider_value_changed(index: int) -> None:
+                value = index * self.THRESHOLD2_STEP
+                if stepper.value() != value:
+                    stepper.set_value(value)
+
+            def on_stepper_value_changed(value: int) -> None:
+                index = value // self.THRESHOLD2_STEP
+                if slider.value() != index:
+                    slider.set_value(index)
+
             slider.valueChanged.connect(on_slider_value_changed)
-            wheel.currentIndexChanged.connect(slider.set_value)
+            stepper.valueChanged.connect(on_stepper_value_changed)
         self._threshold2_slider = slider
         host.setEnabled(False)
 
@@ -421,9 +440,9 @@ class TreatNavigation:
         threshold1 = self._get_threshold1_value()
         # 阈值2：入库时需要记录滚轮显示的实际值（0-500，步长 2）
         if self._threshold2_wheel is not None:
-            threshold2 = self._threshold2_wheel.current_index() * self.THRESHOLD2_STEP
+            threshold2 = self._threshold2_wheel.value()
         else:
-            threshold2 = self._get_threshold2_value()
+            threshold2 = self._get_threshold2_value() * self.THRESHOLD2_STEP
         if threshold1 == 0 and threshold2 == 0:
             if not TipsDialog.show_confirm(self.ui.window() if self.ui else None, "未进行评估是否返回"):
                 return
@@ -618,9 +637,7 @@ class TreatNavigation:
         """
         if self._threshold2_wheel is None:
             return 1
-        wheel_value = self._threshold2_wheel.current_index() * self.THRESHOLD2_STEP
-        # 将 0-500 映射到 0-250
-        return wheel_value // 2
+        return self._threshold2_wheel.value() // self.THRESHOLD2_STEP
 
     def _save_neu_eval_to_db(self) -> bool:
         """
@@ -652,9 +669,8 @@ class TreatNavigation:
         threshold1 = self._get_threshold1_value()
         # 阈值2：入库时记录滚轮上的实际显示值（0-500，步长 2）
         if self._threshold2_wheel is not None:
-            threshold2 = self._threshold2_wheel.current_index() * self.THRESHOLD2_STEP
+            threshold2 = self._threshold2_wheel.value()
         else:
-            # 兜底：若滚轮控件不存在，则按映射值反推实际值
             threshold2 = self._get_threshold2_value() * self.THRESHOLD2_STEP
         alpha_label = get_ui_attr(self.ui, "label_alpha")
         alpha = (alpha_label.text() if alpha_label is not None else "") or ""
@@ -745,7 +761,7 @@ class TreatNavigation:
         if self._threshold1_wheel is not None:
             self._threshold1_wheel.set_value(0)
         if self._threshold2_wheel is not None:
-            self._threshold2_wheel.set_current_index(0)
+            self._threshold2_wheel.set_value(0)
         if self._threshold1_slider is not None:
             self._threshold1_slider.set_value(0)
         if self._threshold2_slider is not None:
@@ -830,10 +846,9 @@ class TreatNavigation:
         # 阈值2 使用滚轮「实际显示值」（0-500，步长 2）参与 alpha 计算，
         # 而不是用于串口发送的映射值。
         if self._threshold2_wheel is not None:
-            threshold2_real = self._threshold2_wheel.current_index() * self.THRESHOLD2_STEP
+            threshold2_real = self._threshold2_wheel.value()
         else:
-            # 兜底：如果滚轮未初始化，则根据发送值反推显示值（发送值 * 2）
-            threshold2_real = self._get_threshold2_value() * 2
+            threshold2_real = self._get_threshold2_value() * self.THRESHOLD2_STEP
 
         alpha = (float(threshold2_real) / float(threshold1)) if threshold1 > 0 else 0.0
 

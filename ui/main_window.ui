@@ -3502,8 +3502,8 @@ QPushButton:disabled {
       <widget class="QLabel" name="label_eval_wave_square_title">
        <property name="geometry">
         <rect>
-         <x>760</x>
-         <y>500</y>
+         <x>840</x>
+         <y>410</y>
          <width>71</width>
          <height>21</height>
         </rect>
@@ -3631,58 +3631,66 @@ QPushButton:disabled {
       <widget class="QWidget" name="widget_threshold1_wheel" native="true">
        <property name="geometry">
         <rect>
-         <x>380</x>
-         <y>360</y>
-         <width>221</width>
-         <height>51</height>
+         <x>320</x>
+         <y>320</y>
+         <width>345</width>
+         <height>53</height>
         </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>345</width>
+         <height>53</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>345</width>
+         <height>53</height>
+        </size>
        </property>
       </widget>
       <widget class="QWidget" name="widget_threshold2_wheel" native="true">
        <property name="geometry">
         <rect>
-         <x>1070</x>
-         <y>240</y>
-         <width>201</width>
-         <height>391</height>
+         <x>1310</x>
+         <y>340</y>
+         <width>211</width>
+         <height>51</height>
         </rect>
        </property>
       </widget>
       <widget class="QWidget" name="widget_threshold1_slider" native="true">
        <property name="geometry">
         <rect>
-         <x>200</x>
+         <x>90</x>
          <y>240</y>
-         <width>631</width>
-         <height>91</height>
+         <width>806</width>
+         <height>33</height>
         </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>806</width>
+         <height>33</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>806</width>
+         <height>33</height>
+        </size>
        </property>
       </widget>
       <widget class="QWidget" name="widget_threshold2_slider" native="true">
        <property name="geometry">
         <rect>
-         <x>1290</x>
-         <y>240</y>
-         <width>81</width>
-         <height>391</height>
+         <x>1190</x>
+         <y>180</y>
+         <width>541</width>
+         <height>91</height>
         </rect>
        </property>
-       <widget class="QLabel" name="label_eval_t2_min">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>0</y>
-          <width>53</width>
-          <height>15</height>
-         </rect>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">color: rgb(88, 122, 244);</string>
-        </property>
-        <property name="text">
-         <string>min：0</string>
-        </property>
-       </widget>
        <widget class="QLabel" name="label_eval_t2_max">
         <property name="geometry">
          <rect>
@@ -3703,19 +3711,19 @@ QPushButton:disabled {
       <widget class="QLabel" name="label_eval_wave_sharp_title">
        <property name="geometry">
         <rect>
-         <x>1550</x>
-         <y>230</y>
-         <width>101</width>
+         <x>1710</x>
+         <y>480</y>
+         <width>71</width>
          <height>21</height>
         </rect>
        </property>
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <pointsize>9</pointsize>
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(88, 122, 244);</string>
+        <string notr="true"/>
        </property>
        <property name="text">
         <string>波形：尖波</string>
@@ -3794,36 +3802,6 @@ border-radius: 8px;</string>
         <string/>
        </property>
       </widget>
-      <widget class="QLabel" name="label_eval_sharp_mask">
-       <property name="geometry">
-        <rect>
-         <x>1410</x>
-         <y>170</y>
-         <width>382</width>
-         <height>470</height>
-        </rect>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>382</width>
-         <height>470</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>382</width>
-         <height>470</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">
-background-color: rgb(229, 233, 247);
-border-radius: 25px;</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
       <widget class="QLabel" name="label_eval_divider">
        <property name="geometry">
         <rect>
@@ -3857,20 +3835,20 @@ border-radius: 25px;</string>
         <rect>
          <x>250</x>
          <y>180</y>
-         <width>32</width>
-         <height>32</height>
+         <width>13</width>
+         <height>13</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>32</width>
-         <height>32</height>
+         <width>13</width>
+         <height>13</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>32</width>
-         <height>32</height>
+         <width>13</width>
+         <height>13</height>
         </size>
        </property>
        <property name="styleSheet">
@@ -3883,9 +3861,9 @@ border-radius: 25px;</string>
       <widget class="QLabel" name="label_eval_hint1">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>190</y>
-         <width>191</width>
+         <x>280</x>
+         <y>180</y>
+         <width>291</width>
          <height>18</height>
         </rect>
        </property>
@@ -3907,17 +3885,17 @@ border-radius: 25px;</string>
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">color: rgb(88, 122, 244);</string>
+        <string notr="true">color:#666666;</string>
        </property>
        <property name="text">
-        <string>请滑动调节或拉动选择</string>
+        <string>鼠标拖动调节或下方点击加减调节</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_eval_tip2">
        <property name="geometry">
         <rect>
-         <x>1110</x>
-         <y>170</y>
+         <x>1230</x>
+         <y>140</y>
          <width>32</width>
          <height>32</height>
         </rect>
@@ -3944,8 +3922,8 @@ border-radius: 25px;</string>
       <widget class="QLabel" name="label_eval_hint2">
        <property name="geometry">
         <rect>
-         <x>1160</x>
-         <y>180</y>
+         <x>1280</x>
+         <y>150</y>
          <width>191</width>
          <height>18</height>
         </rect>
@@ -3977,11 +3955,23 @@ border-radius: 25px;</string>
       <widget class="QLabel" name="label_squarewave">
        <property name="geometry">
         <rect>
-         <x>210</x>
-         <y>540</y>
-         <width>601</width>
-         <height>121</height>
+         <x>90</x>
+         <y>450</y>
+         <width>808</width>
+         <height>183</height>
         </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>808</width>
+         <height>183</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>808</width>
+         <height>183</height>
+        </size>
        </property>
        <property name="styleSheet">
         <string notr="true">background-color: rgb(221, 221, 221);</string>
@@ -3993,11 +3983,14 @@ border-radius: 25px;</string>
       <widget class="QLabel" name="label_sharpwave">
        <property name="geometry">
         <rect>
-         <x>1480</x>
-         <y>420</y>
-         <width>251</width>
-         <height>131</height>
+         <x>1090</x>
+         <y>510</y>
+         <width>691</width>
+         <height>121</height>
         </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(221, 221, 221);</string>
        </property>
        <property name="text">
         <string/>
@@ -4025,40 +4018,11 @@ border-radius: 25px;</string>
         <string>α：</string>
        </property>
       </widget>
-      <widget class="QLabel" name="label_6">
-       <property name="geometry">
-        <rect>
-         <x>200</x>
-         <y>510</y>
-         <width>53</width>
-         <height>15</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>波形显示</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_eval_t1_min">
-       <property name="geometry">
-        <rect>
-         <x>200</x>
-         <y>330</y>
-         <width>80</width>
-         <height>18</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">color: rgb(88, 122, 244);</string>
-       </property>
-       <property name="text">
-        <string>min：0</string>
-       </property>
-      </widget>
       <widget class="QLabel" name="label_eval_t1_max">
        <property name="geometry">
         <rect>
-         <x>770</x>
-         <y>330</y>
+         <x>830</x>
+         <y>280</y>
          <width>61</width>
          <height>18</height>
         </rect>
@@ -4068,6 +4032,80 @@ border-radius: 25px;</string>
        </property>
        <property name="text">
         <string>max：250</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_eval_t1_max_2">
+       <property name="geometry">
+        <rect>
+         <x>1670</x>
+         <y>270</y>
+         <width>61</width>
+         <height>18</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(88, 122, 244);</string>
+       </property>
+       <property name="text">
+        <string>max：250</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_eval_t2_min">
+       <property name="geometry">
+        <rect>
+         <x>1190</x>
+         <y>280</y>
+         <width>53</width>
+         <height>15</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(88, 122, 244);</string>
+       </property>
+       <property name="text">
+        <string>min：0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_20">
+       <property name="geometry">
+        <rect>
+         <x>1090</x>
+         <y>490</y>
+         <width>53</width>
+         <height>15</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>波形显示</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_6">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>420</y>
+         <width>53</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>波形显示</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_eval_t1_min">
+       <property name="geometry">
+        <rect>
+         <x>140</x>
+         <y>270</y>
+         <width>51</width>
+         <height>18</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(88, 122, 244);</string>
+       </property>
+       <property name="text">
+        <string>min：0</string>
        </property>
       </widget>
       <zorder>label_eval_bg</zorder>
@@ -4087,7 +4125,6 @@ border-radius: 25px;</string>
       <zorder>widget_threshold1_slider</zorder>
       <zorder>widget_threshold2_slider</zorder>
       <zorder>label_eval_wave_square_title</zorder>
-      <zorder>label_eval_sharp_mask</zorder>
       <zorder>label_eval_wave_sharp_title</zorder>
       <zorder>label_eval_divider</zorder>
       <zorder>label_eval_tip1</zorder>
@@ -4097,9 +4134,12 @@ border-radius: 25px;</string>
       <zorder>label_squarewave</zorder>
       <zorder>label_sharpwave</zorder>
       <zorder>label_eval_alpha_title</zorder>
+      <zorder>label_eval_t1_max</zorder>
+      <zorder>label_eval_t1_max_2</zorder>
+      <zorder>label_eval_t2_min</zorder>
+      <zorder>label_20</zorder>
       <zorder>label_6</zorder>
       <zorder>label_eval_t1_min</zorder>
-      <zorder>label_eval_t1_max</zorder>
      </widget>
      <widget class="QWidget" name="tab_3">
       <attribute name="title">
