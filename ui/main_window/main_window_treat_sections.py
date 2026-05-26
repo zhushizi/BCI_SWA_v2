@@ -411,7 +411,9 @@ class TreatNavigation:
                 on_completed()
             except Exception:
                 self._logger.exception("评估完成后刷新方案表失败")
-        # 切换到 tabWidget_main 下 tabWidget 的 tab_plan 页面
+        self._navigate_to_plan_tab()
+
+    def _navigate_to_plan_tab(self) -> None:
         main_tab = get_ui_attr(self.ui, "tabWidget_main")
         if main_tab is not None:
             main_tab.setCurrentIndex(0)
@@ -486,6 +488,17 @@ class TreatNavigation:
 
     def on_preprocess_return(self) -> None:
         current_tab_name = self._get_current_sub_tab_name()
+        if current_tab_name == "tab_6":
+            if self._neu_step > 0:
+                if not TipsDialog.show_confirm(
+                    self.ui.window() if self.ui else None,
+                    "未保存评估结果，是否返回？",
+                ):
+                    return
+            self._send_neu_stop_command_frame()
+            self._stop_eval_gifs()
+            self._navigate_to_plan_tab()
+            return
         if current_tab_name == "tab_5":
             try:
                 if not self._host.training_main_ctrl.is_paused_state():
@@ -948,13 +961,6 @@ class TreatNavigation:
 
     def sync_preprocess_title_by_sub_tab(self) -> None:
         tab_name = self._get_current_sub_tab_name()
-
-        # 根据当前子页显示/隐藏返回按钮：
-        # - 评估页 tab_6：隐藏返回按钮，使其与治疗会话解耦；
-        # - 其他页：显示返回按钮。
-        return_btn = get_ui_attr(self.ui, "pushButton_return")
-        if return_btn is not None:
-            return_btn.setVisible(tab_name != "tab_6")
 
         if tab_name == "tab_6":
             # 每次进入评估页都重置 UI：清空 Alpha/结果、重置滚轮与按钮状态

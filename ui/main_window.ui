@@ -270,7 +270,7 @@ QTabWidget#tabWidget_main QTabBar::tab {
 }</string>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -3339,7 +3339,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -3785,7 +3785,8 @@ QPushButton:disabled {
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255);</string>
+        <string notr="true">background-color: rgb(255, 255, 255);
+border-radius: 8px;</string>
        </property>
        <property name="text">
         <string/>
@@ -4170,7 +4171,7 @@ border-radius: 25px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 10px;</string>
+        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 8px;</string>
        </property>
        <property name="text">
         <string/>
@@ -8236,7 +8237,7 @@ padding: 0px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 10px;</string>
+        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 8px;</string>
        </property>
        <property name="text">
         <string/>
@@ -8723,7 +8724,7 @@ padding: 0px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 10px;</string>
+        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 8px;</string>
        </property>
        <property name="text">
         <string/>
@@ -8745,7 +8746,7 @@ padding: 0px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 10px;</string>
+        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 8px;</string>
        </property>
        <property name="text">
         <string/>
@@ -8761,7 +8762,7 @@ padding: 0px;</string>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 10px;</string>
+        <string notr="true">background-color: rgb(255, 255, 255); border-radius: 8px;</string>
        </property>
        <property name="text">
         <string/>
