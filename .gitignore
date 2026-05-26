@@ -24,6 +24,7 @@ Desktop.ini
 # Logs & local runtime
 *.log
 logs/
+runtime/
 
 # PyInstaller
 *.manifest
