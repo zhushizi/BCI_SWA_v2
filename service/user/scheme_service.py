@@ -18,19 +18,23 @@ class SchemeService(_DbBase):
         super().__init__(db_service)
         self.logger = logging.getLogger(__name__)
         self._scheme_fields = (
-            "rowid AS SchemeId",
-            "EvaluationID",
-            "Threshold1",
-            "Threshold2",
-            "Alpha",
-            "EvaluationTime",
-            "EvaluationResult",
-            "PatientID",
+            "e.rowid AS SchemeId",
+            "e.EvaluationID",
+            "e.Threshold1",
+            "e.Threshold2",
+            "e.Alpha",
+            "e.EvaluationTime",
+            "e.EvaluationResult",
+            "e.PatientID",
+            "p.Name AS PatientName",
         )
 
     def _scheme_select_sql(self) -> str:
         fields = ", ".join(self._scheme_fields)
-        return f"SELECT {fields} FROM {self.TABLE_SCHEME}"
+        return (
+            f"SELECT {fields} FROM {self.TABLE_SCHEME} e "
+            "LEFT JOIN Patient p ON p.PatientId = e.PatientID"
+        )
 
     @staticmethod
     def _normalize_name(value: Optional[str]) -> str:
@@ -52,9 +56,9 @@ class SchemeService(_DbBase):
 
         Returns:
             List[Dict[str, str]]: 方案列表，包含 SchemeId、EvaluationID、Threshold1、Threshold2、
-            Alpha、EvaluationTime、EvaluationResult、PatientID
+            Alpha、EvaluationTime、EvaluationResult、PatientID、PatientName
         """
-        sql = f"{self._scheme_select_sql()} ORDER BY rowid DESC"
+        sql = f"{self._scheme_select_sql()} ORDER BY e.rowid DESC"
         return self._execute_query_list(sql, (), "获取方案列表失败")
 
     def add_scheme(self, scheme: Dict[str, str]) -> bool:

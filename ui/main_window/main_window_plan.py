@@ -342,11 +342,19 @@ class PlanPageController(BaseTableController):
             filtered = []
             for plan in self._all_plan_data:
                 pid = str(plan.get("PatientID", "") or "").lower()
+                pname = str(plan.get("PatientName", "") or "").lower()
                 eid = str(plan.get("EvaluationID", "") or "").lower()
-                if keyword in pid or keyword in eid:
+                if keyword in pid or keyword in pname or keyword in eid:
                     filtered.append(plan)
             self._filtered_plans = filtered
         self._refresh_page()
+
+    @staticmethod
+    def _plan_patient_display_name(plan: dict) -> str:
+        name = str(plan.get("PatientName") or "").strip()
+        if name:
+            return name
+        return str(plan.get("PatientID") or "")
 
     def _render_plan_table_page(self, table, plans: List[dict]) -> None:
         self.clear_table()
@@ -358,7 +366,7 @@ class PlanPageController(BaseTableController):
         table.setRowCount(len(plans))
 
         for row, plan in enumerate(plans):
-            self.set_text_item(row, 0, plan.get("PatientID"))
+            self.set_text_item(row, 0, self._plan_patient_display_name(plan))
             self.set_text_item(row, 1, plan.get("Threshold1"))
             self.set_text_item(row, 2, plan.get("Threshold2"))
             self.set_text_item(row, 3, plan.get("Alpha"))

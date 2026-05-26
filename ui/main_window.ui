@@ -1746,7 +1746,7 @@ QTableWidget#tableWidget_plan::item:selected:!active {
        </attribute>
        <column>
         <property name="text">
-         <string>病历号</string>
+         <string>患者姓名</string>
         </property>
        </column>
        <column>
@@ -1835,7 +1835,7 @@ QTableWidget#tableWidget_plan::item:selected:!active {
         <string/>
        </property>
        <property name="placeholderText">
-        <string>病历号/评估编号</string>
+        <string>患者姓名/评估编号</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_plan_search_bg">
