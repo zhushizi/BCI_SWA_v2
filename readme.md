@@ -1,4 +1,4 @@
-打包命令：powershell -NoProfile -Command "if (!(Test-Path 'runtime')) { New-Item -ItemType Directory -Path 'runtime' | Out-Null }; pyinstaller -n HW_BCI_FES main.py --icon ui\pic\icon_BCI.ico --hidden-import ui.resources_rc --collect-all PySide6 --add-data 'db\BCI_SWA.db;db' --add-data 'ui\*.ui;ui' --add-data 'ui\pic;ui/pic' --add-data 'ui\resources_rc.py;ui' --add-data 'infrastructure\config\config.json;infrastructure/config' --add-data 'runtime;runtime'"
+打包命令：powershell -NoProfile -Command "if (!(Test-Path 'runtime')) { New-Item -ItemType Directory -Path 'runtime' | Out-Null }; pyinstaller -n HW_BCI_SWA main.py --icon ui\pic\icon_BCI.ico --hidden-import ui.resources_rc --collect-all PySide6 --add-data 'db\BCI_SWA.db;db' --add-data 'ui\*.ui;ui' --add-data 'ui\pic;ui/pic' --add-data 'ui\resources_rc.py;ui' --add-data 'infrastructure\config\config.json;infrastructure/config' --add-data 'runtime;runtime'"
 
 
 
