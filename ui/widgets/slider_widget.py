@@ -9,7 +9,10 @@ from PySide6.QtWidgets import QWidget
 
 class SliderWidget(QWidget):
     """
-    通用竖直滑杆控件（顶部=最小值，底部=最大值）。
+    通用滑杆控件：
+
+    - 竖直模式（默认）：顶部=最小值，底部=最大值
+    - 横向模式（当控件宽明显大于高时自动启用）：左侧=最小值，右侧=最大值
 
     - 竖直方向带倒角的轨道
     - 蓝色渐变自轨道顶部填至手柄
@@ -59,13 +62,31 @@ class SliderWidget(QWidget):
     def value(self) -> int:
         return self._value
 
+    def _is_horizontal(self) -> bool:
+        # UI 里把容器拉成“横条状”时自动切换绘制/交互方向
+        return self.width() >= self.height() * 1.3
+
     # ----------- 内部几何计算 -----------
     def _track_geometry(self) -> Tuple[QRectF, float, float]:
         """
-        返回 (轨道矩形, 圆角半径/手柄半径, 有效移动高度)。
-        有效移动高度 = 轨道高度 - 2 * 半径。
+        返回 (轨道矩形, 圆角半径/手柄半径, 有效移动长度)。
+        有效移动长度 = 轨道长度 - 2 * 半径。
         """
         rect = self.rect()
+        if self._is_horizontal():
+            margin_x = rect.width() * 0.06
+            margin_y = rect.height() * 0.30
+            track_h = max(10.0, rect.height() - 2 * margin_y)
+            track_rect = QRectF(
+                rect.left() + margin_x,
+                rect.center().y() - track_h / 2.0,
+                max(40.0, rect.width() - 2 * margin_x),
+                track_h,
+            )
+            radius = track_rect.height() / 2.0
+            effective_len = max(1.0, track_rect.width() - 2.0 * radius)
+            return track_rect, radius, effective_len
+
         margin_x = rect.width() * 0.3
         margin_y = rect.height() * 0.08
         track_width = max(10.0, rect.width() - 2 * margin_x)
@@ -76,8 +97,8 @@ class SliderWidget(QWidget):
             max(20.0, rect.height() - 2 * margin_y),
         )
         radius = track_rect.width() / 2.0
-        effective_h = max(1.0, track_rect.height() - 2.0 * radius)
-        return track_rect, radius, effective_h
+        effective_len = max(1.0, track_rect.height() - 2.0 * radius)
+        return track_rect, radius, effective_len
 
     def _value_ratio(self) -> float:
         if self._max_value <= self._min_value:
@@ -85,19 +106,28 @@ class SliderWidget(QWidget):
         return (self._value - self._min_value) / float(self._max_value - self._min_value)
 
     def _handle_center(self) -> QPointF:
-        """手柄位置：顶部=最小值，底部=最大值。"""
-        track_rect, radius, effective_h = self._track_geometry()
+        """手柄位置：竖直(上小下大) / 横向(左小右大)。"""
+        track_rect, radius, effective_len = self._track_geometry()
         t = self._value_ratio()
+        if self._is_horizontal():
+            left_center_x = track_rect.left() + radius
+            center_x = left_center_x + t * effective_len
+            center_y = track_rect.center().y()
+            return QPointF(center_x, center_y)
         center_x = track_rect.center().x()
         top_center_y = track_rect.top() + radius
-        center_y = top_center_y + t * effective_h
+        center_y = top_center_y + t * effective_len
         return QPointF(center_x, center_y)
 
-    def _value_from_pos(self, y: float) -> int:
-        """从屏幕 y 反算数值：顶部=最小值，底部=最大值。"""
-        track_rect, radius, effective_h = self._track_geometry()
-        top_center_y = track_rect.top() + radius
-        t = (y - top_center_y) / effective_h
+    def _value_from_pos(self, pos: QPointF) -> int:
+        """从坐标反算数值：竖直用 y，横向用 x。"""
+        track_rect, radius, effective_len = self._track_geometry()
+        if self._is_horizontal():
+            left_center_x = track_rect.left() + radius
+            t = (pos.x() - left_center_x) / effective_len
+        else:
+            top_center_y = track_rect.top() + radius
+            t = (pos.y() - top_center_y) / effective_len
         t = max(0.0, min(1.0, t))
         value = self._min_value + t * (self._max_value - self._min_value)
         return int(round(value))
@@ -110,7 +140,7 @@ class SliderWidget(QWidget):
         # 使用透明色清理自身区域，保留父级背景
         painter.fillRect(self.rect(), self._bg_color)
 
-        track_rect, radius, effective_h = self._track_geometry()
+        track_rect, radius, _ = self._track_geometry()
 
         # 轨道（带倒角）
         path_track = QPainterPath()
@@ -119,19 +149,32 @@ class SliderWidget(QWidget):
         painter.setBrush(QBrush(Qt.white))
         painter.drawPath(path_track)
 
-        # 填充部分：自轨道顶部到手柄中心（蓝色在刻度值上方）
+        # 填充部分：竖直为顶部到手柄；横向为左侧到手柄
         handle_center = self._handle_center()
-        fill_top = track_rect.top()
-        fill_bottom = max(handle_center.y(), track_rect.top())
-        fill_rect = QRectF(track_rect.left(), fill_top, track_rect.width(), fill_bottom - fill_top)
-
-        if fill_rect.height() > 0:
+        if self._is_horizontal():
+            fill_left = track_rect.left()
+            fill_right = max(handle_center.x(), track_rect.left())
+            fill_rect = QRectF(fill_left, track_rect.top(), fill_right - fill_left, track_rect.height())
+            should_fill = fill_rect.width() > 0
+            gradient = QLinearGradient(
+                fill_rect.left(),
+                track_rect.center().y(),
+                fill_rect.right(),
+                track_rect.center().y(),
+            )
+        else:
+            fill_top = track_rect.top()
+            fill_bottom = max(handle_center.y(), track_rect.top())
+            fill_rect = QRectF(track_rect.left(), fill_top, track_rect.width(), fill_bottom - fill_top)
+            should_fill = fill_rect.height() > 0
             gradient = QLinearGradient(
                 track_rect.center().x(),
                 fill_rect.top(),
                 track_rect.center().x(),
                 fill_rect.bottom(),
             )
+
+        if should_fill:
             gradient.setColorAt(0.0, self._track_fill_top)
             gradient.setColorAt(1.0, self._track_fill_bottom)
 
@@ -179,7 +222,7 @@ class SliderWidget(QWidget):
             return
 
         if track_rect.contains(event.position()):
-            self.set_value(self._value_from_pos(event.position().y()))
+            self.set_value(self._value_from_pos(event.position()))
             self._dragging = True
             event.accept()
             return
@@ -190,7 +233,7 @@ class SliderWidget(QWidget):
         if not self._dragging:
             super().mouseMoveEvent(event)
             return
-        self.set_value(self._value_from_pos(event.position().y()))
+        self.set_value(self._value_from_pos(event.position()))
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # type: ignore[override]

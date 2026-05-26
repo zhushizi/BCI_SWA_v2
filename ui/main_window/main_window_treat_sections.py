@@ -8,11 +8,11 @@ from typing import Optional
 from datetime import datetime
 
 from PySide6.QtCore import QObject, QEvent, Qt, QTimer
-from PySide6.QtGui import QMovie
 from PySide6.QtWidgets import QLabel
 
 from ui.dialogs.tips_dialog import TipsDialog
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
+from ui.widgets.eval_wave_widget import EvalWaveKind, EvalWaveWidget
 from ui.widgets.slider_widget import SliderWidget
 from ui.widgets.wheel_widget import WheelWidget
 from service.business.hardware.dd_ack_retry import DdAckRetrySender
@@ -104,8 +104,8 @@ class TreatNavigation:
         self._threshold1_slider: Optional[SliderWidget] = None
         self._threshold2_slider: Optional[SliderWidget] = None
         self._neu_mask: Optional[QLabel] = None
-        self._movie_squarewave: Optional[QMovie] = None
-        self._movie_sharpwave: Optional[QMovie] = None
+        self._wave_square: Optional[EvalWaveWidget] = None
+        self._wave_sharp: Optional[EvalWaveWidget] = None
         # 滚轮防抖：仅在停止在某个值后发送指令，调整过程中不发送
         self._threshold1_commit_timer = QTimer()
         self._threshold1_commit_timer.setSingleShot(True)
@@ -144,7 +144,7 @@ class TreatNavigation:
         safe_connect(self._logger, getattr(sub_tab, "currentChanged", None), self.on_sub_tab_changed)
 
         self._init_neu_mask()
-        self._init_eval_gifs()
+        self._init_eval_waves()
 
     def _init_neu_mask(self) -> None:
         if self._neu_mask is not None:
@@ -182,46 +182,63 @@ class TreatNavigation:
         if self._neu_mask is not None:
             self._neu_mask.hide()
 
-    def _init_eval_gifs(self) -> None:
-        """方波/尖波 GIF 绑定到 label_squarewave、label_sharpwave，初始为静态（不播放）。"""
-        label_sw = get_ui_attr(self.ui, "label_squarewave")
-        label_sh = get_ui_attr(self.ui, "label_sharpwave")
-        if label_sw is None and label_sh is None:
-            return
-        if label_sw is not None:
-            self._movie_squarewave = QMovie(":/eval/pic/eval_squarewave.gif")
-            self._movie_squarewave.setCacheMode(QMovie.CacheMode.CacheAll)
-            label_sw.setMovie(self._movie_squarewave)
-            # 不 start，保持静态第一帧
-        if label_sh is not None:
-            self._movie_sharpwave = QMovie(":/eval/pic/eval_sharpwave.gif")
-            self._movie_sharpwave.setCacheMode(QMovie.CacheMode.CacheAll)
-            label_sh.setMovie(self._movie_sharpwave)
-            # 不 start，保持静态第一帧
+    def _mount_eval_wave(
+        self, label_name: str, kind: EvalWaveKind, bg_color: str
+    ) -> Optional[EvalWaveWidget]:
+        """用自绘波形控件替换 QLabel+GIF，波形铺满 label 区域。"""
+        label = get_ui_attr(self.ui, label_name)
+        if label is None:
+            return None
+        parent = label.parentWidget()
+        if parent is None:
+            return None
+        wave = EvalWaveWidget(kind, parent)
+        wave.setObjectName(f"{label_name}_draw")
+        wave.setGeometry(label.geometry())
+        wave.set_background_color(bg_color)
+        label.hide()
+        wave.show()
+        wave.raise_()
+        return wave
 
-    def _stop_eval_gifs(self) -> None:
-        """两个 GIF 都停止，显示静态帧。"""
-        if self._movie_squarewave is not None and self._movie_squarewave.state() == QMovie.MovieState.Running:
-            self._movie_squarewave.stop()
-        if self._movie_sharpwave is not None and self._movie_sharpwave.state() == QMovie.MovieState.Running:
-            self._movie_sharpwave.stop()
+    def _sync_eval_wave_geometry(self) -> None:
+        """label 布局变化后，同步波形控件尺寸以铺满。"""
+        pairs = (
+            ("label_squarewave", self._wave_square),
+            ("label_sharpwave", self._wave_sharp),
+        )
+        for label_name, wave in pairs:
+            if wave is None:
+                continue
+            label = get_ui_attr(self.ui, label_name)
+            if label is not None:
+                wave.setGeometry(label.geometry())
+                wave.raise_()
 
-    def _ensure_eval_gifs_static_on_enter_tab6(self) -> None:
-        """进入 tab_6 时确保方波/尖波 GIF 已绑定并显示为静态（懒初始化）。"""
-        if self._movie_squarewave is None or self._movie_sharpwave is None:
-            self._init_eval_gifs()
-        self._stop_eval_gifs()
-        # 强制跳到第一帧并刷新 label，解决首次进入 tab_6 时未绘制的问题
-        if self._movie_squarewave is not None:
-            self._movie_squarewave.jumpToFrame(0)
-            label_sw = get_ui_attr(self.ui, "label_squarewave")
-            if label_sw is not None:
-                label_sw.update()
-        if self._movie_sharpwave is not None:
-            self._movie_sharpwave.jumpToFrame(0)
-            label_sh = get_ui_attr(self.ui, "label_sharpwave")
-            if label_sh is not None:
-                label_sh.update()
+    def _init_eval_waves(self) -> None:
+        """方波/尖波自绘控件，铺满 label_squarewave / label_sharpwave 区域。"""
+        if self._wave_square is None:
+            self._wave_square = self._mount_eval_wave(
+                "label_squarewave", EvalWaveKind.SQUARE, "#DDDDDD"
+            )
+        if self._wave_sharp is None:
+            self._wave_sharp = self._mount_eval_wave(
+                "label_sharpwave", EvalWaveKind.SHARP, "#E5E9F7"
+            )
+
+    def _stop_eval_waves(self) -> None:
+        """停止波形滚动动画，保持静态铺满显示。"""
+        if self._wave_square is not None:
+            self._wave_square.stop_animation()
+        if self._wave_sharp is not None:
+            self._wave_sharp.stop_animation()
+
+    def _ensure_eval_waves_on_enter_tab6(self) -> None:
+        """进入 tab_6 时确保波形控件已创建并铺满、静态显示。"""
+        if self._wave_square is None or self._wave_sharp is None:
+            self._init_eval_waves()
+        self._sync_eval_wave_geometry()
+        self._stop_eval_waves()
 
     def _init_threshold1_wheel(self) -> None:
         """在 widget_threshold1_wheel 中创建滚轮控件，范围 0-250 步长 1。"""
@@ -368,7 +385,7 @@ class TreatNavigation:
         self._set_sub_tab_by_name("tab_6")
         self.sync_preprocess_title_by_sub_tab()
         # 延迟到下一事件循环，等 tab_6 完成显示后再初始化静态图，否则首次进入看不到
-        QTimer.singleShot(0, self._ensure_eval_gifs_static_on_enter_tab6)
+        QTimer.singleShot(0, self._ensure_eval_waves_on_enter_tab6)
 
     def _get_grade_from_label(self, name: str) -> int:
         label = get_ui_attr(self.ui, name)
@@ -448,17 +465,17 @@ class TreatNavigation:
             self._send_neu_eval_frame()
             self._send_neu_start_command_frame()
             self._set_neu_tab_eval_step1_state()
-            self._stop_eval_gifs()
-            if self._movie_squarewave is not None:
-                self._movie_squarewave.start()
+            self._stop_eval_waves()
+            if self._wave_square is not None:
+                self._wave_square.start_animation()
             return
         if self._neu_step == 1:
             self._send_neu_threshold2_realtime_frame()
             self._set_neu_tab_eval_step2_state()
-            if self._movie_squarewave is not None:
-                self._movie_squarewave.stop()
-            if self._movie_sharpwave is not None:
-                self._movie_sharpwave.start()
+            if self._wave_square is not None:
+                self._wave_square.stop_animation()
+            if self._wave_sharp is not None:
+                self._wave_sharp.start_animation()
 
     def on_neu_reset_clicked(self) -> None:
         """重置：停止评估、清空数值与结果，恢复为初始态（仅「开始测试」可点）。"""
@@ -476,7 +493,7 @@ class TreatNavigation:
         self._update_neu_alpha_eval_result()
         self._send_neu_stop_command_frame()
         self._set_neu_tab_initial_state()
-        self._stop_eval_gifs()
+        self._stop_eval_waves()
 
     def on_threshold1_value_changed(self, _value: int) -> None:
         if self._neu_step == 1:
@@ -496,7 +513,7 @@ class TreatNavigation:
                 ):
                     return
             self._send_neu_stop_command_frame()
-            self._stop_eval_gifs()
+            self._stop_eval_waves()
             self._navigate_to_plan_tab()
             return
         if current_tab_name == "tab_5":
@@ -553,7 +570,7 @@ class TreatNavigation:
             except Exception:
                 self._logger.exception("进入训练主屏失败")
         elif self._get_current_sub_tab_name() == "tab_6":
-            QTimer.singleShot(0, self._ensure_eval_gifs_static_on_enter_tab6)
+            QTimer.singleShot(0, self._ensure_eval_waves_on_enter_tab6)
 
     def _get_current_sub_tab_name(self) -> str:
         sub_tab = get_ui_attr(self.ui, "tabWidget_2")
@@ -867,7 +884,7 @@ class TreatNavigation:
         if host_slider2 is not None:
             host_slider2.setEnabled(False)
 
-        self._stop_eval_gifs()
+        self._stop_eval_waves()
         self._show_neu_mask_over("label_48")
 
     def _set_neu_tab_eval_step1_state(self) -> None:
@@ -956,7 +973,7 @@ class TreatNavigation:
         if host_slider2 is not None:
             host_slider2.setEnabled(False)
 
-        self._stop_eval_gifs()
+        self._stop_eval_waves()
         self._hide_neu_mask()
 
     def sync_preprocess_title_by_sub_tab(self) -> None:
