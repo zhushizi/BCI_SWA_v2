@@ -8,10 +8,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Any
 
-from PySide6.QtWidgets import QApplication, QMessageBox, QGraphicsDropShadowEffect
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt, QDateTime
-from PySide6.QtGui import QColor
-
 from ui.core.base_dialog import BaseUiDialog
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
 from ui.dialogs.tips_dialog import TipsDialog
@@ -45,16 +43,8 @@ class PatientNewDialog(BaseUiDialog):
 
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(14)
-        shadow.setXOffset(0)
-        shadow.setYOffset(0)
-        shadow.setColor(QColor(0, 0, 0, 24))
-        self.ui.setGraphicsEffect(shadow)
-        # 大圆角 + 极轻阴影
-        _sheet = (self.ui.styleSheet() or "").strip()
-        _extra = "border-radius: 32px; background-color: #ffffff"
-        self.ui.setStyleSheet(f"{_sheet}; {_extra}" if _sheet else _extra)
+        # 不为弹窗叠加阴影效果（避免四角出现 drop shadow）。
+        self.ui.setGraphicsEffect(None)
         close_btn = get_ui_attr(self.ui, "label_close")
         safe_connect(self._logger, getattr(close_btn, "clicked", None), self.reject)
 
@@ -67,6 +57,12 @@ class PatientNewDialog(BaseUiDialog):
 
         if self._is_edit:
             self.setWindowTitle("编辑患者")
+            title_label = get_ui_attr(self.ui, "label")
+            safe_call(
+                self._logger,
+                getattr(title_label, "setStyleSheet", None),
+                "border-image: url(:/patient/pic/patient_revise_logo.png);",
+            )
         if data:
             self.set_data(data)
 
@@ -83,7 +79,7 @@ class PatientNewDialog(BaseUiDialog):
             safe_connect(self._logger, ok_btn.clicked, self._on_ok)
 
         # .ui 里设的是根控件的尺寸，实际窗口是 BaseUiDialog 的外层 QDialog，需在此固定大小以防拖动调整
-        self.setFixedSize(1200, 612)
+        self.setFixedSize(1046, 548)
 
     @classmethod
     def _apply_calendar_arrow_style(cls) -> None:
@@ -95,6 +91,26 @@ class PatientNewDialog(BaseUiDialog):
             app.setStyleSheet((app.styleSheet() or "") + _CALENDAR_ARROW_STYLE)
             cls._calendar_style_applied = True
 
+    @staticmethod
+    def _is_valid_id_card(s: str) -> bool:
+        """15 位全数字，或 18 位（前 17 位数字，末位数字或 X）。"""
+        t = (s or "").strip()
+        if not t:
+            return True  # 未填不强制（仅对已填内容校验格式）
+        if len(t) == 15:
+            return t.isdigit()
+        if len(t) == 18:
+            return t[:17].isdigit() and (t[17].isdigit() or t[17].upper() == "X")
+        return False
+
+    @staticmethod
+    def _is_valid_phone(s: str) -> bool:
+        """11 位纯数字；未填不强制。"""
+        t = (s or "").strip()
+        if not t:
+            return True
+        return len(t) == 11 and t.isdigit()
+
     def _on_ok(self):
         pid = self._get_text("lineEdit_patientId")
         name = self._get_text("lineEdit_name")
@@ -102,6 +118,18 @@ class PatientNewDialog(BaseUiDialog):
             TipsDialog.show_tips(self, "请填写姓名（必填项）")
             name_input = get_ui_attr(self.ui, "lineEdit_name")
             safe_call(self._logger, getattr(name_input, "setFocus", None))
+            return
+        id_card = self._get_text("lineEdit_idCard")
+        if id_card and not self._is_valid_id_card(id_card):
+            TipsDialog.show_tips(self, "身份证号不规范，请重新填写")
+            id_input = get_ui_attr(self.ui, "lineEdit_idCard")
+            safe_call(self._logger, getattr(id_input, "setFocus", None))
+            return
+        phone = self._get_text("lineEdit_phone")
+        if phone and not self._is_valid_phone(phone):
+            TipsDialog.show_tips(self, "手机号须为11位纯数字，请重新填写")
+            phone_input = get_ui_attr(self.ui, "lineEdit_phone")
+            safe_call(self._logger, getattr(phone_input, "setFocus", None))
             return
         self.accept()
 
@@ -124,11 +152,17 @@ class PatientNewDialog(BaseUiDialog):
             index = combo_gender.findText(sex)
             if index != -1:
                 safe_call(self._logger, combo_gender.setCurrentIndex, index)
+        combo_marital = get_ui_attr(self.ui, "comboBox_marital")
+        if combo_marital:
+            marital = data.get("MaritalStatus", "")
+            index = combo_marital.findText(marital)
+            if index != -1:
+                safe_call(self._logger, combo_marital.setCurrentIndex, index)
         spin_age = get_ui_attr(self.ui, "spinBox_age")
         if spin_age:
             age = data.get("Age")
             if age is not None:
-                safe_call(self._logger, spin_age.setValue, int(age))
+                safe_call(self._logger, spin_age.setText, str(age))
         date_edit = get_ui_attr(self.ui, "dateTimeEdit_visit")
         if date_edit:
             visit_time = data.get("VisitTime", "")
@@ -149,12 +183,24 @@ class PatientNewDialog(BaseUiDialog):
         if combo_gender:
             sex = combo_gender.currentText()
 
+        marital_status = ""
+        combo_marital = get_ui_attr(self.ui, "comboBox_marital")
+        if combo_marital:
+            marital_status = combo_marital.currentText()
+
         age = None
         spin_age = get_ui_attr(self.ui, "spinBox_age")
         if spin_age:
-            age = spin_age.value()
-            if age == 0:
-                age = None
+            age_text = ""
+            try:
+                age_text = (spin_age.text() or "").strip()
+            except Exception:
+                age_text = ""
+            if age_text:
+                try:
+                    age = int(age_text)
+                except (TypeError, ValueError):
+                    age = None
 
         visit_time = ""
         date_edit = get_ui_attr(self.ui, "dateTimeEdit_visit")
@@ -165,6 +211,7 @@ class PatientNewDialog(BaseUiDialog):
             "PatientId": self._get_text("lineEdit_patientId"),
             "Name": self._get_text("lineEdit_name"),
             "Sex": sex,
+            "MaritalStatus": marital_status,
             "Age": age,
             "VisitTime": visit_time,
             "PhoneNumber": self._get_text("lineEdit_phone"),

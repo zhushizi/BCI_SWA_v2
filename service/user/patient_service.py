@@ -18,8 +18,9 @@ class PatientService(_DbBase):
     def __init__(self, db_service: DatabaseService):
         super().__init__(db_service)
         self.logger = logging.getLogger(__name__)
+        self._ensure_patient_columns()
         self._patient_fields = (
-            "PatientId", "Name", "Sex", "Age", "VisitTime",
+            "PatientId", "Name", "Sex", "MaritalStatus", "Age", "VisitTime",
             "UserId", "PhoneNumber", "IdCard", "DoctorName",
             "Notes", "OperationDate", "Birthday",
             "DiagnosisResult", "DurationOfillness", "UnderlyingHealthCondition",
@@ -34,6 +35,22 @@ class PatientService(_DbBase):
             "TreatTime",
             "TreatStartTime",
         )
+
+    def _ensure_patient_columns(self) -> None:
+        """为已存在的 Patient 表补齐缺失列（轻量迁移）。"""
+        if not self.db.table_exists(self.TABLE_PATIENT):
+            return
+        try:
+            info = self.db.get_table_info(self.TABLE_PATIENT)
+            existing = {row.get("name") for row in (info or [])}
+            if "MaritalStatus" not in existing:
+                self.db.execute_update(
+                    f"ALTER TABLE {self.TABLE_PATIENT} ADD COLUMN MaritalStatus TEXT DEFAULT ''",
+                    (),
+                )
+                self.logger.info("Patient 表已补充列: MaritalStatus")
+        except Exception as e:
+            self.logger.error("Patient 表列检查/迁移失败: %s", e)
 
     def _patient_select_sql(self) -> str:
         fields = ", ".join(self._patient_fields)
@@ -107,16 +124,17 @@ class PatientService(_DbBase):
         """
         sql = f"""
             INSERT INTO {self.TABLE_PATIENT} (
-                PatientId, Name, Sex, Age, VisitTime,
+                PatientId, Name, Sex, MaritalStatus, Age, VisitTime,
                 UserId, PhoneNumber, IdCard, DoctorName,
                 Notes, OperationDate, Birthday,
                 DiagnosisResult, DurationOfillness, UnderlyingHealthCondition
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         params = (
             patient.get("PatientId", ""),
             patient.get("Name", ""),
             patient.get("Sex", ""),
+            patient.get("MaritalStatus", ""),
             patient.get("Age", None),
             patient.get("VisitTime", ""),
             patient.get("UserId", ""),
@@ -145,6 +163,7 @@ class PatientService(_DbBase):
             UPDATE {self.TABLE_PATIENT} SET
                 Name = ?,
                 Sex = ?,
+                MaritalStatus = ?,
                 Age = ?,
                 VisitTime = ?,
                 UserId = ?,
@@ -162,6 +181,7 @@ class PatientService(_DbBase):
         params = (
             patient.get("Name", ""),
             patient.get("Sex", ""),
+            patient.get("MaritalStatus", ""),
             patient.get("Age", None),
             patient.get("VisitTime", ""),
             patient.get("UserId", ""),
