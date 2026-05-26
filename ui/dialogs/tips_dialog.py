@@ -6,14 +6,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QGraphicsDropShadowEffect
-from PySide6.QtCore import QFile, QIODevice
-from PySide6.QtGui import QColor, QShowEvent
+from PySide6.QtCore import Qt, QFile, QIODevice
+from PySide6.QtWidgets import QDialog, QVBoxLayout
 from PySide6.QtUiTools import QUiLoader
 
+from ui.core.dialog_overlay import OverlayDialog
 from ui.core.resource_loader import ensure_resources_loaded
 from ui.core.utils import get_ui_attr, safe_connect
 
@@ -21,11 +19,8 @@ UI_ROOT = Path(__file__).resolve().parents[1]
 UI_PATH_SINGLE = UI_ROOT / "tips_sigle.ui"   # 仅「确定」
 UI_PATH_QUESTION = UI_ROOT / "tips.ui"       # 「否」+「确定」
 
-# 提示弹窗呼出时的固定坐标（左上角 x, y），与 BaseUiDialog 的 DIALOG_FIXED_POSITION 独立
-TIPS_DIALOG_FIXED_POSITION = (650, 360)
 
-
-class TipsDialog(QDialog):
+class TipsDialog(OverlayDialog):
     """单按钮提示用 tips_sigle.ui，双按钮确认用 tips.ui，无顶栏，pushButton_close 关闭。"""
 
     def __init__(self, parent=None, message: str = "", question: bool = False):
@@ -48,16 +43,6 @@ class TipsDialog(QDialog):
 
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(12)
-        shadow.setXOffset(0)
-        shadow.setYOffset(0)
-        shadow.setColor(QColor(0, 0, 0, 24))
-        self.ui.setGraphicsEffect(shadow)
-        # 大圆角 + 极轻阴影
-        _sheet = (self.ui.styleSheet() or "").strip()
-        _extra = "border-radius: 32px; background-color: #ffffff"
-        self.ui.setStyleSheet(f"{_sheet}; {_extra}" if _sheet else _extra)
         close_btn = get_ui_attr(self.ui, "pushButton_close")
         safe_connect(self._logger, getattr(close_btn, "clicked", None), self.reject)
         confirm_btn = get_ui_attr(self.ui, "pushButton_confirm")
@@ -70,12 +55,6 @@ class TipsDialog(QDialog):
             safe_connect(self._logger, getattr(confirm_btn, "clicked", None), self.reject)
 
         self.set_message(message)
-
-    def showEvent(self, event: QShowEvent) -> None:
-        """呼出时移动到提示窗专用固定坐标（见 TIPS_DIALOG_FIXED_POSITION）。"""
-        super().showEvent(event)
-        x, y = TIPS_DIALOG_FIXED_POSITION
-        self.move(x, y)
 
     def set_message(self, text: str) -> None:
         msg_label = get_ui_attr(self.ui, "label_message")

@@ -4,8 +4,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QTextDocument
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QPainterPath, QRegion, QTextDocument
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import QTableWidgetItem
 
@@ -20,6 +20,9 @@ UI_PATH = UI_ROOT / "record_compare.ui"
 
 
 class RecordCompareDialog(BaseUiDialog):
+    # 与 record_compare.ui 中 QWidget#Form 的 border-radius 保持一致
+    _CORNER_RADIUS = 16
+
     def __init__(
         self,
         parent=None,
@@ -33,7 +36,10 @@ class RecordCompareDialog(BaseUiDialog):
         super().__init__(parent=parent, ui_path=UI_PATH, layout_spacing=0)
         self._logger = logging.getLogger(__name__)
         self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(1360, 920)
+        # 裁切外层窗口为圆角，避免 frameless 下四角露出白色直角
+        QTimer.singleShot(0, self._apply_rounded_mask)
 
         self._session_app = session_app
         self._report_app = report_app
@@ -198,3 +204,12 @@ class RecordCompareDialog(BaseUiDialog):
         )
         if result is None:
             TipsDialog.show_tips(self, "导出失败，请查看日志")
+
+    def _apply_rounded_mask(self) -> None:
+        w, h = self.width(), self.height()
+        if w <= 0 or h <= 0:
+            return
+        radius = min(self._CORNER_RADIUS, min(w, h) / 2)
+        path = QPainterPath()
+        path.addRoundedRect(self.rect(), radius, radius)
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))

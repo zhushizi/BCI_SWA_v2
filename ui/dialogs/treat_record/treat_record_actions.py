@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QFileDialog
+from ui.core.dialog_overlay import get_save_file_name
 
 from ui.dialogs.tips_dialog import TipsDialog
 from ui.report import (
@@ -62,8 +62,9 @@ class TreatRecordActions:
         """导出 PDF：选择保存路径后生成并打开。"""
         record_data, _treat_start_time, session_id = table.extract_row_data(row)
         default_name = default_pdf_filename(self._patient_id or "", "训练报告")
-        path, _ = QFileDialog.getSaveFileName(
-            None,
+        parent_widget = table.ui.window() if table and getattr(table, "ui", None) else None
+        path, _ = get_save_file_name(
+            parent_widget,
             "导出 PDF",
             default_name,
             "PDF 文件 (*.pdf)",

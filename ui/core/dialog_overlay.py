@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Callable, TypeVar
 
 from PySide6.QtCore import QEvent, QObject, Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QShowEvent
 from PySide6.QtPrintSupport import QPrintDialog
 from PySide6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox, QWidget
 
@@ -25,6 +25,18 @@ def resolve_overlay_host(widget: QWidget | None) -> QWidget | None:
     if win is not None:
         return win
     return widget
+
+
+def center_dialog_on_host(dialog: QDialog) -> None:
+    """将弹窗居中到承载窗口（主窗口）可视区域。"""
+    host = resolve_overlay_host(dialog.parentWidget() or dialog)
+    if host is None:
+        return
+    host_rect = host.frameGeometry()
+    dialog_rect = dialog.frameGeometry()
+    x = host_rect.x() + max(0, (host_rect.width() - dialog_rect.width()) // 2)
+    y = host_rect.y() + max(0, (host_rect.height() - dialog_rect.height()) // 2)
+    dialog.move(x, y)
 
 
 class DialogOverlayWidget(QWidget):
@@ -121,7 +133,7 @@ def run_with_overlay(parent: QWidget | None, func: Callable[[], _T]) -> _T:
 
 
 class OverlayDialog(QDialog):
-    """带背景蒙版的对话框基类。"""
+    """带背景蒙版的对话框基类；显示时居中于主窗口。"""
 
     def _overlay_parent(self) -> QWidget | None:
         parent = self.parentWidget()
@@ -132,11 +144,16 @@ class OverlayDialog(QDialog):
             return win
         return None
 
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        center_dialog_on_host(self)
+
     def exec(self) -> int:
         ctrl = overlay_controller_for(self._overlay_parent())
         if ctrl:
             ctrl.push()
         try:
+            center_dialog_on_host(self)
             return super().exec()
         finally:
             if ctrl:
