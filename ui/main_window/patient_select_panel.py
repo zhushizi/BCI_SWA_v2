@@ -4,7 +4,7 @@ import logging
 from math import ceil
 from typing import Any, Dict, List, Optional
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QIntValidator, QPalette
 from PySide6.QtWidgets import (
     QFrame,
@@ -43,7 +43,8 @@ class _PatientCard(QFrame):
     def _build_ui(self) -> None:
         self.setObjectName("patientCard")
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedHeight(PatientSelectPanel.CARD_MIN_HEIGHT)
+        self.setFixedHeight(PatientSelectPanel.CARD_HEIGHT)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 5, 10, 5)
@@ -137,9 +138,8 @@ class _PatientCard(QFrame):
 class PatientSelectPanel(QWidget):
     patient_selected = Signal(dict)
     PAGE_SIZE = 10
-    CARD_MIN_HEIGHT = 44
+    CARD_HEIGHT = 68
     CARD_SPACING = 4
-    LIST_BOTTOM_GAP = 6
 
     def __init__(self, patient_app=None, parent: Optional[QWidget] = None, logger: Optional[logging.Logger] = None) -> None:
         super().__init__(parent)
@@ -316,27 +316,15 @@ class PatientSelectPanel(QWidget):
         pagination_layout.addStretch()
         root_layout.addWidget(pagination, 0)
 
-    def _add_cards_evenly(self, cards: List[_PatientCard]) -> None:
-        """卡片贴底排列，固定小间距，高度随列表区域均分。"""
+    def _add_cards(self, cards: List[_PatientCard]) -> None:
+        """固定高度卡片自上而下排列，剩余空间留白。"""
         if not cards:
             return
         self._list_layout.setSpacing(self.CARD_SPACING)
-        self._list_layout.addStretch(1)
         for card in cards:
-            self._list_layout.addWidget(card, 0)
-        self._list_layout.addSpacing(self.LIST_BOTTOM_GAP)
-
-    def _update_card_heights(self) -> None:
-        if not self._cards:
-            return
-        count = len(self._cards)
-        available = self._list_widget.height()
-        if available <= 0:
-            return
-        total_gap = (count - 1) * self.CARD_SPACING + self.LIST_BOTTOM_GAP
-        card_height = max(self.CARD_MIN_HEIGHT, (available - total_gap) // count)
-        for card in self._cards:
-            card.setFixedHeight(card_height)
+            card.setFixedHeight(self.CARD_HEIGHT)
+            self._list_layout.addWidget(card, 0, Qt.AlignmentFlag.AlignTop)
+        self._list_layout.addStretch(1)
 
     def _render_cards(self) -> None:
         self._clear_cards()
@@ -360,8 +348,7 @@ class PatientSelectPanel(QWidget):
             card = _PatientCard(patient, self._list_widget)
             card.clicked.connect(self._on_card_clicked)
             self._cards.append(card)
-        self._add_cards_evenly(self._cards)
-        QTimer.singleShot(0, self._update_card_heights)
+        self._add_cards(self._cards)
 
         self._update_card_selection()
         self._update_pagination()
@@ -443,10 +430,6 @@ class PatientSelectPanel(QWidget):
         self._selected_patient_id = self._patient_key(patient)
         self._update_card_selection()
         self.patient_selected.emit(patient)
-
-    def resizeEvent(self, event) -> None:  # type: ignore[override]
-        super().resizeEvent(event)
-        self._update_card_heights()
 
     @staticmethod
     def _patient_key(patient: Optional[Dict[str, Any]]) -> Optional[str]:
