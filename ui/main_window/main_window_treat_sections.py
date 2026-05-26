@@ -14,6 +14,7 @@ from ui.dialogs.tips_dialog import TipsDialog
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
 from ui.widgets.eval_wave_widget import EvalWaveKind, EvalWaveWidget
 from ui.widgets.slider_widget import SliderWidget
+from ui.widgets.threshold_stepper_widget import ThresholdStepperWidget
 from ui.widgets.wheel_widget import WheelWidget
 from service.business.hardware.dd_ack_retry import DdAckRetrySender
 
@@ -99,7 +100,7 @@ class TreatNavigation:
         self._logger = host._logger
         # 神经评估步骤：0=初始 仅开始测试可点，1=step1 阈值1，2=step2 阈值2
         self._neu_step = 0
-        self._threshold1_wheel: Optional[WheelWidget] = None
+        self._threshold1_wheel: Optional[ThresholdStepperWidget] = None
         self._threshold2_wheel: Optional[WheelWidget] = None
         self._threshold1_slider: Optional[SliderWidget] = None
         self._threshold2_slider: Optional[SliderWidget] = None
@@ -241,19 +242,19 @@ class TreatNavigation:
         self._stop_eval_waves()
 
     def _init_threshold1_wheel(self) -> None:
-        """在 widget_threshold1_wheel 中创建滚轮控件，范围 0-250 步长 1。"""
+        """在 widget_threshold1_wheel 中创建「按钮 + 数值」加减器，范围 0-250 步长 1。"""
         if self._threshold1_wheel is not None:
             return
         host = get_ui_attr(self.ui, "widget_threshold1_wheel")
         if host is None:
             return
         host.setCursor(Qt.CursorShape.PointingHandCursor)
-        wheel = WheelWidget(host)
-        wheel.setGeometry(host.rect())
-        values = [str(i) for i in range(self.THRESHOLD1_MIN, self.THRESHOLD1_MAX + 1)]
-        wheel.set_values(values)
-        wheel.set_current_index(0)
-        self._threshold1_wheel = wheel
+        stepper = ThresholdStepperWidget(host)
+        stepper.setGeometry(host.rect())
+        stepper.set_range(self.THRESHOLD1_MIN, self.THRESHOLD1_MAX)
+        stepper.set_single_step(1)
+        stepper.set_value(0)
+        self._threshold1_wheel = stepper
         host.setEnabled(False)
 
     def _init_threshold2_wheel(self) -> None:
@@ -284,12 +285,18 @@ class TreatNavigation:
         slider.setGeometry(host.rect())
         slider.set_range(self.THRESHOLD1_MIN, self.THRESHOLD1_MAX)
         slider.set_value(0)
-        wheel = self._threshold1_wheel
-        if wheel is not None:
+        stepper = self._threshold1_wheel
+        if stepper is not None:
             def on_slider_value_changed(v: int) -> None:
-                wheel.set_current_index(v)
+                if stepper.value() != v:
+                    stepper.set_value(v)
+
+            def on_stepper_value_changed(v: int) -> None:
+                if slider.value() != v:
+                    slider.set_value(v)
+
             slider.valueChanged.connect(on_slider_value_changed)
-            wheel.currentIndexChanged.connect(slider.set_value)
+            stepper.valueChanged.connect(on_stepper_value_changed)
         self._threshold1_slider = slider
         host.setEnabled(False)
 
@@ -736,7 +743,7 @@ class TreatNavigation:
     def _reset_neu_threshold_spinboxes(self) -> None:
         """重置阈值1/2 滚轮与滑杆（阈值1 归 0，阈值2 归 0）。"""
         if self._threshold1_wheel is not None:
-            self._threshold1_wheel.set_current_index(0)
+            self._threshold1_wheel.set_value(0)
         if self._threshold2_wheel is not None:
             self._threshold2_wheel.set_current_index(0)
         if self._threshold1_slider is not None:
