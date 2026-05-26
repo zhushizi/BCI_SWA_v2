@@ -37,7 +37,8 @@ class SliderWidget(QWidget):
         self._handle_color = QColor(88, 122, 244)
         self._handle_inner_color = QColor(255, 255, 255)
 
-        self.setMinimumSize(40, 120)
+        # 默认允许薄横向条；竖向宿主在首次 resize 后会提高到 120
+        self.setMinimumSize(40, 16)
         self.setMouseTracking(False)
         # 允许使用透明背景
         self.setAttribute(Qt.WA_TranslucentBackground, True)
@@ -66,6 +67,17 @@ class SliderWidget(QWidget):
         # UI 里把容器拉成“横条状”时自动切换绘制/交互方向
         return self.width() >= self.height() * 1.3
 
+    def _apply_minimum_size(self) -> None:
+        """横向薄条容器（如 806×33）需允许较小高度，否则轨道会被裁到可视区外。"""
+        if self.width() > 0 and self.height() > 0 and self._is_horizontal():
+            self.setMinimumSize(80, 16)
+        else:
+            self.setMinimumSize(40, 120)
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        self._apply_minimum_size()
+
     # ----------- 内部几何计算 -----------
     def _track_geometry(self) -> Tuple[QRectF, float, float]:
         """
@@ -75,8 +87,9 @@ class SliderWidget(QWidget):
         rect = self.rect()
         if self._is_horizontal():
             margin_x = rect.width() * 0.06
-            margin_y = rect.height() * 0.30
-            track_h = max(10.0, rect.height() - 2 * margin_y)
+            # 横向条：上下仅留小边距，轨道尽量占满宿主高度（勿用竖向的 30% 边距）
+            pad_y = min(6.0, max(2.0, rect.height() * 0.1))
+            track_h = max(12.0, rect.height() - 2.0 * pad_y)
             track_rect = QRectF(
                 rect.left() + margin_x,
                 rect.center().y() - track_h / 2.0,

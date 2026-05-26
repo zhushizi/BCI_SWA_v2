@@ -68,6 +68,19 @@ class TreatSessionGuard:
         return True
 
 
+class _SliderHostResizeFilter(QObject):
+    """宿主 widget 尺寸变化时，让内嵌 SliderWidget 始终铺满。"""
+
+    def __init__(self, slider: SliderWidget, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent)
+        self._slider = slider
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.Resize:
+            self._slider.setGeometry(obj.rect())
+        return False
+
+
 class _Threshold1GuardFilter(QObject):
     """未点击「开始测试」时，拦截对阈值1滚轮/滑杆的操作并提示。"""
 
@@ -294,6 +307,7 @@ class TreatNavigation:
         host.setCursor(Qt.CursorShape.PointingHandCursor)
         slider = SliderWidget(host)
         slider.setGeometry(host.rect())
+        host.installEventFilter(_SliderHostResizeFilter(slider, host))
         slider.set_range(self.THRESHOLD1_MIN, self.THRESHOLD1_MAX)
         slider.set_value(0)
         stepper = self._threshold1_wheel
@@ -321,6 +335,7 @@ class TreatNavigation:
         host.setCursor(Qt.CursorShape.PointingHandCursor)
         slider = SliderWidget(host)
         slider.setGeometry(host.rect())
+        host.installEventFilter(_SliderHostResizeFilter(slider, host))
         threshold2_count = (self.THRESHOLD2_MAX - self.THRESHOLD2_MIN) // self.THRESHOLD2_STEP + 1
         slider.set_range(0, threshold2_count - 1)
         slider.set_value(1)
