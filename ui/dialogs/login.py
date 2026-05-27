@@ -53,6 +53,12 @@ class LoginWindow(QWidget):
         if get_ui_attr(self.ui, "pushButton_pwdvision"):
             self._update_password_vision_button(False)
 
+        # 取消“记住密码”功能：隐藏/禁用复选框，并且不再读取/保存密码
+        checkbox = get_ui_attr(self.ui, "checkBox_remember")
+        if checkbox:
+            safe_call(self._logger, getattr(checkbox, "setVisible", None), False)
+            safe_call(self._logger, getattr(checkbox, "setEnabled", None), False)
+
         self._setup_connections()
         self._load_saved_credentials()
 
@@ -72,13 +78,10 @@ class LoginWindow(QWidget):
             line_edit_uid = get_ui_attr(self.ui, "lineEdit_uid")
             safe_call(self._logger, getattr(line_edit_uid, "setText", None), username)
 
-        if self.user_app.has_saved_credentials():
-            password = self.user_app.get_saved_password()
-            if password:
-                line_edit_pwd = get_ui_attr(self.ui, "lineEdit_upwd")
-                safe_call(self._logger, getattr(line_edit_pwd, "setText", None), password)
-            checkbox = get_ui_attr(self.ui, "checkBox_remember")
-            safe_call(self._logger, getattr(checkbox, "setChecked", None), True)
+        # 即便配置文件里还有旧的 password 字段，也不会展示/填充
+        checkbox = get_ui_attr(self.ui, "checkBox_remember")
+        if checkbox:
+            safe_call(self._logger, getattr(checkbox, "setChecked", None), False)
 
     def _handle_login(self):
         username_input = get_ui_attr(self.ui, "lineEdit_uid")
@@ -99,11 +102,8 @@ class LoginWindow(QWidget):
         result = self.user_app.login(username, password)
 
         if result["success"]:
-            remember = False
-            checkbox = get_ui_attr(self.ui, "checkBox_remember")
-            if checkbox:
-                remember = bool(checkbox.isChecked())
-            self.user_app.save_credentials(username, password, remember)
+            # 强制不记住密码
+            self.user_app.save_credentials(username, password, False)
             self.login_success.emit(result["user"])
             self.close()
         else:

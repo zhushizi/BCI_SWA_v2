@@ -4,7 +4,7 @@
 - 用户登录验证
 - 用户注册（作为登录流程的一部分）
 - 用户登出
-- 登录凭据的保存和读取（记住密码功能）
+- 账号/凭据读取与保存（目前不再保存密码）
 """
 
 import json
@@ -32,33 +32,21 @@ class _CredentialStore:
             return None
 
     def get_password(self) -> Optional[str]:
-        if not self._path.exists():
-            return None
-        try:
-            config = self._read()
-            if config.get('remember_password', False):
-                return config.get('password')
-        except Exception as e:
-            self._logger.warning(f"读取保存的密码失败: {e}")
+        """不再支持记住密码：始终返回 None。"""
         return None
 
     def has_credentials(self) -> bool:
-        if not self._path.exists():
-            return False
-        try:
-            config = self._read()
-            return config.get('remember_password', False)
-        except Exception:
-            return False
+        """不再支持记住密码：始终返回 False。"""
+        return False
 
     def save(self, username: str, password: str, remember: bool) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        # 强制不保存密码（仅可能保存用户名，且记住密码开关固定为 False）
+        remember = False
         config = {
             'username': username,
             'remember_password': remember
         }
-        if remember:
-            config['password'] = password
         try:
             self._write(config)
             self._logger.debug(f"保存用户凭据: {username}, remember={remember}")
