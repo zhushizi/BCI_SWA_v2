@@ -2836,74 +2836,11 @@ border-radius: 8px;
           </property>
          </widget>
         </widget>
-        <widget class="QFrame" name="frame_language">
-         <property name="geometry">
-          <rect>
-           <x>24</x>
-           <y>408</y>
-           <width>760</width>
-           <height>124</height>
-          </rect>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">QFrame#frame_language {
-background: #FFFFFF;
-border: 1px solid #EEF1F5;
-border-radius: 12px;
-}</string>
-         </property>
-         <widget class="QLabel" name="label_language_title">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>16</y>
-            <width>80</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: #1F1F1F;
-font-size: 16px;
-font-weight: 600;</string>
-          </property>
-          <property name="text">
-           <string>语言切换</string>
-          </property>
-         </widget>
-         <widget class="QComboBox" name="comboBox_language">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>60</y>
-            <width>340</width>
-            <height>36</height>
-           </rect>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QComboBox {
-background: #F7F8FC;
-border: 1px solid #EEF1F5;
-border-radius: 8px;
-padding-left: 12px;
-}</string>
-          </property>
-          <item>
-           <property name="text">
-            <string>简体中文</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>English</string>
-           </property>
-          </item>
-         </widget>
-        </widget>
         <widget class="QFrame" name="frame_hardware_ports">
          <property name="geometry">
           <rect>
            <x>24</x>
-           <y>564</y>
+           <y>408</y>
            <width>760</width>
            <height>150</height>
           </rect>
