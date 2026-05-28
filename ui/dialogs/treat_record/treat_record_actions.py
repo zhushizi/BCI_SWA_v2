@@ -29,6 +29,11 @@ class TreatRecordActions:
         rows_to_delete, session_ids = table.get_selected_session_ids()
         if not rows_to_delete:
             return
+        parent_widget = table.ui.window() if table and getattr(table, "ui", None) else None
+        count = len(session_ids)
+        message = f"确认删除选中的 {count} 条诊疗记录吗？" if count > 1 else "确认删除选中的诊疗记录吗？"
+        if not TipsDialog.show_confirm(parent_widget, message):
+            return
         deleted = self._session_app.delete_patient_treat_sessions(session_ids)
         if deleted <= 0:
             return
