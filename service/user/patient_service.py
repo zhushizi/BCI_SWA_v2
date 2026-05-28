@@ -23,6 +23,7 @@ class PatientService(_DbBase):
             "PatientId", "Name", "Sex", "MaritalStatus", "Age", "VisitTime",
             "UserId", "PhoneNumber", "IdCard", "DoctorName",
             "Notes", "OperationDate", "Birthday",
+            "Height", "Weight", "Ethnicity",
             "DiagnosisResult", "DurationOfillness", "UnderlyingHealthCondition",
         )
         self._treat_record_fields = (
@@ -43,12 +44,19 @@ class PatientService(_DbBase):
         try:
             info = self.db.get_table_info(self.TABLE_PATIENT)
             existing = {row.get("name") for row in (info or [])}
-            if "MaritalStatus" not in existing:
-                self.db.execute_update(
-                    f"ALTER TABLE {self.TABLE_PATIENT} ADD COLUMN MaritalStatus TEXT DEFAULT ''",
-                    (),
-                )
-                self.logger.info("Patient 表已补充列: MaritalStatus")
+            for col_name, col_def in (
+                ("MaritalStatus", "TEXT DEFAULT ''"),
+                ("Birthday", "TEXT DEFAULT ''"),
+                ("Height", "TEXT DEFAULT ''"),
+                ("Weight", "TEXT DEFAULT ''"),
+                ("Ethnicity", "TEXT DEFAULT ''"),
+            ):
+                if col_name not in existing:
+                    self.db.execute_update(
+                        f"ALTER TABLE {self.TABLE_PATIENT} ADD COLUMN {col_name} {col_def}",
+                        (),
+                    )
+                    self.logger.info("Patient 表已补充列: %s", col_name)
         except Exception as e:
             self.logger.error("Patient 表列检查/迁移失败: %s", e)
 
@@ -143,8 +151,9 @@ class PatientService(_DbBase):
                 PatientId, Name, Sex, MaritalStatus, Age, VisitTime,
                 UserId, PhoneNumber, IdCard, DoctorName,
                 Notes, OperationDate, Birthday,
+                Height, Weight, Ethnicity,
                 DiagnosisResult, DurationOfillness, UnderlyingHealthCondition
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         params = (
             patient.get("PatientId", ""),
@@ -160,6 +169,9 @@ class PatientService(_DbBase):
             patient.get("Notes", ""),
             patient.get("OperationDate", ""),
             patient.get("Birthday", ""),
+            patient.get("Height", ""),
+            patient.get("Weight", ""),
+            patient.get("Ethnicity", ""),
             patient.get("DiagnosisResult", ""),
             patient.get("DurationOfillness", ""),
             patient.get("UnderlyingHealthCondition", ""),
@@ -189,6 +201,9 @@ class PatientService(_DbBase):
                 Notes = ?,
                 OperationDate = ?,
                 Birthday = ?,
+                Height = ?,
+                Weight = ?,
+                Ethnicity = ?,
                 DiagnosisResult = ?,
                 DurationOfillness = ?,
                 UnderlyingHealthCondition = ?
@@ -207,6 +222,9 @@ class PatientService(_DbBase):
             patient.get("Notes", ""),
             patient.get("OperationDate", ""),
             patient.get("Birthday", ""),
+            patient.get("Height", ""),
+            patient.get("Weight", ""),
+            patient.get("Ethnicity", ""),
             patient.get("DiagnosisResult", ""),
             patient.get("DurationOfillness", ""),
             patient.get("UnderlyingHealthCondition", ""),

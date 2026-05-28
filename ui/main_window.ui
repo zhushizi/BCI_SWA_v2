@@ -155,21 +155,21 @@
    <property name="geometry">
     <rect>
      <x>1677</x>
-     <y>42</y>
+     <y>40</y>
      <width>17</width>
-     <height>14</height>
+     <height>17</height>
     </rect>
    </property>
    <property name="minimumSize">
     <size>
      <width>17</width>
-     <height>14</height>
+     <height>17</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>17</width>
-     <height>14</height>
+     <height>17</height>
     </size>
    </property>
    <property name="styleSheet">
@@ -353,7 +353,7 @@ QTabWidget#tabWidget QTabBar::tab {
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
