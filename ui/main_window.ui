@@ -353,7 +353,7 @@ QTabWidget#tabWidget QTabBar::tab {
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>1</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
@@ -1468,10 +1468,28 @@ QPushButton:pressed { background: rgba(75,134,252,0.16); }</string>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">border-image: url(:/patient/pic/patient_new.png);</string>
+        <string notr="true">QPushButton#pushButton_new {
+    background-color: transparent;
+    border: 1px solid #4B86FC;
+    border-radius: 10px;
+    color: #4B86FC;
+    padding: 4px 10px;
+}
+QPushButton#pushButton_new:hover {
+    background-color: rgba(75, 134, 252, 0.12);
+    border: 1px solid #6B9BFD;
+    color: #3A6FE0;
+}
+QPushButton#pushButton_new:pressed {
+    background-color: rgba(75, 134, 252, 0.24);
+    border: 1px solid #3A6FE0;
+    color: #2A5FD0;
+    padding-top: 5px;
+    padding-bottom: 3px;
+}</string>
        </property>
        <property name="text">
-        <string/>
+        <string>+ 新建患者</string>
        </property>
       </widget>
       <widget class="QLineEdit" name="lineEdit_search">
@@ -1790,10 +1808,28 @@ QTableWidget#tableWidget_plan::item:selected:!active {
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">border-image: url(:/plan/pic/plan_new.png);</string>
+        <string notr="true">QPushButton#pushButton_plan_new {
+    background-color: transparent;
+    border: 1px solid #4B86FC;
+    border-radius: 10px;
+    color: #4B86FC;
+    padding: 4px 10px;
+}
+QPushButton#pushButton_plan_new:hover {
+    background-color: rgba(75, 134, 252, 0.12);
+    border: 1px solid #6B9BFD;
+    color: #3A6FE0;
+}
+QPushButton#pushButton_plan_new:pressed {
+    background-color: rgba(75, 134, 252, 0.24);
+    border: 1px solid #3A6FE0;
+    color: #2A5FD0;
+    padding-top: 5px;
+    padding-bottom: 3px;
+}</string>
        </property>
        <property name="text">
-        <string/>
+        <string>+ 新建评估</string>
        </property>
       </widget>
       <widget class="QLineEdit" name="lineEdit_plan_search">
@@ -1968,7 +2004,7 @@ QTabBar::tab:hover:!selected {
 }</string>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="tab_set_system">
         <attribute name="title">
@@ -2505,11 +2541,23 @@ color: #FFFFFF;
         <widget class="QPushButton" name="pushButton_logout">
          <property name="geometry">
           <rect>
-           <x>370</x>
-           <y>310</y>
-           <width>91</width>
-           <height>31</height>
+           <x>380</x>
+           <y>308</y>
+           <width>80</width>
+           <height>36</height>
           </rect>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>80</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>80</width>
+           <height>36</height>
+          </size>
          </property>
          <property name="styleSheet">
           <string notr="true">QPushButton {
