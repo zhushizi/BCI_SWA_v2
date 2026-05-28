@@ -643,7 +643,7 @@ class PatientPageController(BaseTableController):
 
     def open_new_patient_dialog(self) -> bool:
         """打开新建患者弹窗；成功新增并已选中时返回 True。"""
-        dialog = PatientNewDialog(self.parent)
+        dialog = PatientNewDialog(self.parent, patient_app=self.patient_app)
         if dialog.exec() != QDialog.Accepted:
             return False
 

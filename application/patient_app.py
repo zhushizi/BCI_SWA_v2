@@ -38,6 +38,10 @@ class PatientApp:
     def get_patient_by_id(self, patient_id: str) -> Optional[Dict[str, Any]]:
         """根据病历号获取患者信息"""
         return self.patient_service.get_patient_by_id(patient_id)
+
+    def patient_id_exists(self, patient_id: str, exclude_row_id: Optional[int] = None) -> bool:
+        """检查就诊编号（病历号）是否已被使用。"""
+        return self.patient_service.patient_id_exists(patient_id, exclude_row_id=exclude_row_id)
     
     def search_patients(self, keyword: str, limit: int = None) -> List[Dict[str, Any]]:
         """

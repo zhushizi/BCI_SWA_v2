@@ -92,6 +92,19 @@ class PatientService(_DbBase):
         sql = f"{self._patient_select_sql()} WHERE PatientId = ? LIMIT 1"
         return self._execute_query_one(sql, (pid,), "查询患者信息失败")
 
+    def patient_id_exists(self, patient_id: str, exclude_row_id: Optional[int] = None) -> bool:
+        """检查就诊编号（病历号）是否已被使用。"""
+        pid = self._normalize_patient_id(patient_id)
+        if not pid:
+            return False
+        if exclude_row_id is not None:
+            sql = f"SELECT 1 AS ok FROM {self.TABLE_PATIENT} WHERE PatientId = ? AND rowid != ? LIMIT 1"
+            params: Tuple[Any, ...] = (pid, exclude_row_id)
+        else:
+            sql = f"SELECT 1 AS ok FROM {self.TABLE_PATIENT} WHERE PatientId = ? LIMIT 1"
+            params = (pid,)
+        return self._execute_query_one(sql, params, "查询病历号是否重复失败") is not None
+
     def search_patients(self, keyword: str, limit: int = None) -> List[Dict[str, Any]]:
         """
         根据关键词搜索患者（支持姓名和病历号模糊查询）
@@ -122,6 +135,9 @@ class PatientService(_DbBase):
         必填字段：PatientId, Name
         其他字段缺省时写空
         """
+        if self.patient_id_exists(str(patient.get("PatientId", "") or "")):
+            self.logger.warning("新增患者失败：病历号已存在: %s", patient.get("PatientId"))
+            return False
         sql = f"""
             INSERT INTO {self.TABLE_PATIENT} (
                 PatientId, Name, Sex, MaritalStatus, Age, VisitTime,
