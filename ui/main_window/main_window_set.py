@@ -208,9 +208,9 @@ class SetPageController:
         if not btn:
             return
         if self._muted:
-            btn.setStyleSheet("border-image: url(:/set/pic/set_volumeopen.png);")
-        else:
             btn.setStyleSheet("border-image: url(:/set/pic/set_volumeshut.png);")
+        else:
+            btn.setStyleSheet("border-image: url(:/set/pic/set_volumeopen.png);")
 
     def _on_volume_toggle(self) -> None:
         if not self._muted:
