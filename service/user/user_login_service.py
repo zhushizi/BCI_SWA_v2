@@ -9,11 +9,24 @@
 
 import json
 import os
+import re
 from typing import Optional, Dict, Any, Tuple
 from pathlib import Path
 import logging
 
 from infrastructure.data import DatabaseService
+
+INVALID_CREDENTIALS_MESSAGE = "用户名或者密码不正确"
+ADMIN_PASSWORD = "hw666888"
+INVALID_PASSWORD_MESSAGE = "新密码须为至少6位的数字或字母组合"
+_PASSWORD_PATTERN = re.compile(r"^[A-Za-z\d]{6,}$")
+
+
+def validate_password(password: str) -> Optional[str]:
+    """校验密码格式，合法返回 None，否则返回错误提示。"""
+    if _PASSWORD_PATTERN.fullmatch(str(password or "")):
+        return None
+    return INVALID_PASSWORD_MESSAGE
 
 
 class _CredentialStore:
@@ -94,6 +107,14 @@ class _UserRepository:
             self._logger.error(f"获取用户信息失败: {e}")
             return None
 
+    def update_password(self, user_id: int, new_password: str) -> bool:
+        sql = f"UPDATE {self._table} SET Password = ? WHERE UserId = ?"
+        try:
+            return self._db.execute_update(sql, (new_password, user_id)) > 0
+        except Exception as e:
+            self._logger.error("更新用户密码失败: %s", e)
+            return False
+
 
 class UserLoginService:
     """用户登录服务类 - 处理用户登录相关的业务逻辑"""
@@ -149,14 +170,14 @@ class UserLoginService:
             if not user:
                 return {
                     'success': False,
-                    'message': '用户名不存在'
+                    'message': INVALID_CREDENTIALS_MESSAGE,
                 }
-            
+
             # 验证密码（数据库中是明文存储，直接比较）
             if user['Password'] != password:
                 return {
                     'success': False,
-                    'message': '密码错误'
+                    'message': INVALID_CREDENTIALS_MESSAGE,
                 }
             
             # 登录成功
@@ -284,4 +305,40 @@ class UserLoginService:
             Optional[Dict[str, Any]]: 用户信息，不存在返回 None
         """
         return self._user_repo.get_user_info(user_id)
+
+    def verify_current_password(self, old_password: str) -> Optional[str]:
+        """校验当前登录用户旧密码。"""
+        if not self._is_authenticated or not self._current_user:
+            return "用户未登录"
+
+        user = self._user_repo.find_by_username(self._current_user.get("UserName", ""))
+        if not user:
+            return "用户不存在"
+        if user.get("Password") != old_password:
+            return "旧密码不正确"
+        return None
+
+    def change_password(self, admin_password: str, old_password: str, new_password: str) -> Dict[str, Any]:
+        """修改当前登录用户密码（管理员密码 + 旧密码双校验）。"""
+        if admin_password != ADMIN_PASSWORD:
+            return {"success": False, "message": "管理员密码不正确"}
+        if not self._is_authenticated or not self._current_user:
+            return {"success": False, "message": "用户未登录"}
+
+        old_password_error = self.verify_current_password(old_password)
+        if old_password_error:
+            return {"success": False, "message": old_password_error}
+
+        password_error = validate_password(new_password)
+        if password_error:
+            return {"success": False, "message": password_error}
+        if new_password == old_password:
+            return {"success": False, "message": "新密码不能与旧密码相同"}
+
+        user_id = self._current_user.get("UserId")
+        if not user_id:
+            return {"success": False, "message": "用户信息无效"}
+        if not self._user_repo.update_password(int(user_id), new_password):
+            return {"success": False, "message": "密码修改失败"}
+        return {"success": True, "message": "密码修改成功"}
 

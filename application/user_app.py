@@ -80,6 +80,21 @@ class UserApp:
     def save_credentials(self, username: str, password: str, remember: bool) -> None:
         """保存用户凭据"""
         self.user_service.save_credentials(username, password, remember)
+
+    def change_password(self, admin_password: str, old_password: str, new_password: str) -> dict:
+        """修改当前登录用户密码（需管理员密码授权）。"""
+        return self.user_service.change_password(admin_password, old_password, new_password)
+
+    @staticmethod
+    def validate_password(password: str) -> Optional[str]:
+        """校验密码格式，合法返回 None，否则返回错误提示。"""
+        from service.user.user_login_service import validate_password as _validate
+
+        return _validate(password)
+
+    def verify_current_password(self, old_password: str) -> Optional[str]:
+        """校验当前登录用户旧密码，正确返回 None，否则返回错误提示。"""
+        return self.user_service.verify_current_password(old_password)
     
     def get_user_by_id(self, user_id: int) -> Optional[dict]:
         """根据ID获取用户信息"""

@@ -6,9 +6,10 @@ import logging
 import ctypes
 from typing import Optional
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QLineEdit
 
-from ui.core.utils import get_ui_attr, safe_connect
+from ui.core.utils import get_ui_attr, safe_call, safe_connect
+from ui.dialogs.tips_dialog import TipsDialog
 
 
 class SetPageController:
@@ -21,6 +22,7 @@ class SetPageController:
         logger: Optional[logging.Logger] = None,
         decoder_port: Optional[str] = None,
         hardware_config_app=None,
+        user_app=None,
     ):
         self.parent = parent
         self.ui = ui
@@ -28,6 +30,7 @@ class SetPageController:
         self.decoder_port = str(decoder_port or "").strip() or None
         self.nes_port = None
         self.hardware_config_app = hardware_config_app
+        self.user_app = user_app
         self._endpoint_volume = None
         self._muted = False
         self._volume_before_mute = None
@@ -54,6 +57,7 @@ class SetPageController:
         if btn_toggle is None:
             self.logger.warning("未找到静音按钮: pushButton_vol_shutopen")
         safe_connect(self.logger, getattr(btn_toggle, "clicked", None), self._on_volume_toggle)
+        self._bind_account_controls()
 
     def init_ui(self):
         if self.hardware_config_app:
@@ -86,6 +90,7 @@ class SetPageController:
                 nes_combo.setCurrentText(self.nes_port)
             nes_combo.blockSignals(prev_block)
         self._init_volume_controls()
+        self._init_account_controls()
 
     def refresh(self):
         pass
@@ -259,6 +264,99 @@ class SetPageController:
             ok = self.hardware_config_app.set_nes_port(next_port)
             if not ok:
                 self.logger.warning("切换串口失败: %s", next_port)
+
+    def _init_account_controls(self) -> None:
+        """密码相关输入框统一使用掩码显示，避免明文输入。"""
+        for name in (
+            "lineEdit_resetpwd",
+            "lineEdit_set_oldpwd",
+            "lineEdit_set_newpwd",
+            "lineEdit_set_confirmpwd",
+        ):
+            field = get_ui_attr(self.ui, name)
+            if field is not None:
+                safe_call(self.logger, getattr(field, "setEchoMode", None), QLineEdit.EchoMode.Password)
+
+    def _bind_account_controls(self) -> None:
+        save_btn = get_ui_attr(self.ui, "pushButton_resetpwdcomfirm")
+        cancel_btn = get_ui_attr(self.ui, "pushButton_set_cancel")
+        safe_connect(self.logger, getattr(save_btn, "clicked", None), self._on_account_save)
+        safe_connect(self.logger, getattr(cancel_btn, "clicked", None), self._on_account_cancel)
+
+    def _clear_account_fields(self) -> None:
+        for name in (
+            "lineEdit_resetpwd",
+            "lineEdit_set_oldpwd",
+            "lineEdit_set_newpwd",
+            "lineEdit_set_confirmpwd",
+        ):
+            field = get_ui_attr(self.ui, name)
+            safe_call(self.logger, getattr(field, "clear", None))
+
+    def _account_field_text(self, name: str) -> str:
+        field = get_ui_attr(self.ui, name)
+        if field is None:
+            return ""
+        try:
+            return field.text().strip()
+        except Exception:
+            return ""
+
+    def _on_account_cancel(self) -> None:
+        self._clear_account_fields()
+
+    def _on_account_save(self) -> None:
+        if not self.user_app:
+            TipsDialog.show_tips(self.parent, "用户服务未就绪，无法修改密码")
+            return
+
+        admin_password = self._account_field_text("lineEdit_resetpwd")
+        old_password = self._account_field_text("lineEdit_set_oldpwd")
+        new_password = self._account_field_text("lineEdit_set_newpwd")
+        confirm_password = self._account_field_text("lineEdit_set_confirmpwd")
+
+        if not admin_password:
+            TipsDialog.show_tips(self.parent, "请输入管理员密码")
+            return
+        if not old_password:
+            TipsDialog.show_tips(self.parent, "请输入旧密码")
+            return
+        if not new_password:
+            TipsDialog.show_tips(self.parent, "请输入新密码")
+            return
+        if not confirm_password:
+            TipsDialog.show_tips(self.parent, "请确认新密码")
+            return
+
+        from service.user.user_login_service import ADMIN_PASSWORD
+        if admin_password != ADMIN_PASSWORD:
+            TipsDialog.show_tips(self.parent, "管理员密码不正确")
+            return
+
+        old_password_error = self.user_app.verify_current_password(old_password)
+        if old_password_error:
+            TipsDialog.show_tips(self.parent, old_password_error)
+            return
+
+        if new_password != confirm_password:
+            TipsDialog.show_tips(self.parent, "两次输入的新密码不一致")
+            return
+
+        password_error = self.user_app.validate_password(new_password)
+        if password_error:
+            TipsDialog.show_tips(self.parent, password_error)
+            return
+
+        if new_password == old_password:
+            TipsDialog.show_tips(self.parent, "新密码不能与旧密码相同")
+            return
+
+        result = self.user_app.change_password(admin_password, old_password, new_password)
+        if result.get("success"):
+            TipsDialog.show_tips(self.parent, str(result.get("message") or "密码修改成功"))
+            self._clear_account_fields()
+        else:
+            TipsDialog.show_tips(self.parent, str(result.get("message") or "密码修改失败"))
 
     def _list_available_ports(self) -> list[str]:
         if not self.hardware_config_app:

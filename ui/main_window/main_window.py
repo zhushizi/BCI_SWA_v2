@@ -147,6 +147,7 @@ class MainWindow(QWidget):
             self.logger,
             decoder_port=self.decoder_port,
             hardware_config_app=self.hardware_config_app,
+            user_app=self.user_app,
         )
 
         # 主窗口拆分模块
