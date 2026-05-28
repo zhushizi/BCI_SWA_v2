@@ -3151,8 +3151,8 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
     <widget class="QLabel" name="label_userProphoto">
      <property name="geometry">
       <rect>
-       <x>65</x>
-       <y>800</y>
+       <x>66</x>
+       <y>806</y>
        <width>34</width>
        <height>34</height>
       </rect>
@@ -3207,9 +3207,9 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
     <widget class="QLabel" name="label_hosipital">
      <property name="geometry">
       <rect>
-       <x>39</x>
+       <x>29</x>
        <y>860</y>
-       <width>91</width>
+       <width>111</width>
        <height>20</height>
       </rect>
      </property>
@@ -3226,10 +3226,10 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
     <widget class="QLabel" name="label_department">
      <property name="geometry">
       <rect>
-       <x>57</x>
+       <x>49</x>
        <y>890</y>
-       <width>53</width>
-       <height>15</height>
+       <width>71</width>
+       <height>20</height>
       </rect>
      </property>
      <property name="styleSheet">

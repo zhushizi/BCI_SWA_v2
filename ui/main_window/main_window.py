@@ -270,6 +270,7 @@ class MainWindow(QWidget):
     def _init_ui(self):
         """初始化UI状态"""
         self._nav.init_ui()
+        self._hide_patient_action_buttons()
         self._update_button_states()
         self._init_device_status()
         self._user_info.init_org_info()
@@ -279,6 +280,13 @@ class MainWindow(QWidget):
         self.plan_controller.init_ui()
         self.set_controller.init_ui()
         self.report_controller.init_ui()
+
+    def _hide_patient_action_buttons(self) -> None:
+        """隐藏患者入组/出组按钮。"""
+        for btn_name in ("pushButton_patient_in", "pushButton_patient_out"):
+            btn = get_ui_attr(self.ui, btn_name)
+            if btn is not None:
+                safe_call(self.logger, getattr(btn, "hide", None))
 
     def open_patient_treat_records(self, patient: dict) -> None:
         """从患者管理等入口打开诊疗记录模块并定位到指定患者。"""
