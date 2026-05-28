@@ -499,6 +499,22 @@ class MainWindowTreatFlow:
             self._patient_select_panel.focus_search()
 
     def on_patient_selected(self, patient: dict) -> None:
+        if not patient:
+            label_patient = get_ui_attr(self.ui, "label_patient")
+            if label_patient:
+                label_patient.setText("未选择患者")
+            else:
+                label_fallback = get_ui_attr(self.ui, "label_11")
+                safe_call(self.logger, getattr(label_fallback, "setText", None), "未选择患者")
+            self._fill_patient_info_labels(None)
+            self._host._selected_patient = None
+            if self._patient_select_panel:
+                self._patient_select_panel.set_selected_patient(None)
+            if getattr(self._host, "session_app", None):
+                safe_call(self.logger, getattr(self._host.session_app, "set_current_patient", None), "")
+            self._host.treat_controller.set_current_patient(None)
+            return
+
         patient_name = patient.get("Name", "")
         label_patient = get_ui_attr(self.ui, "label_patient")
         if label_patient:

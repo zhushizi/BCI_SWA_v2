@@ -427,7 +427,14 @@ class PatientSelectPanel(QWidget):
         self.refresh_patients(keyword=text)
 
     def _on_card_clicked(self, patient: Dict[str, Any]) -> None:
-        self._selected_patient_id = self._patient_key(patient)
+        clicked_id = self._patient_key(patient)
+        if clicked_id and clicked_id == self._selected_patient_id:
+            # 再次点击已选中卡片：取消选择
+            self._selected_patient_id = None
+            self._update_card_selection()
+            self.patient_selected.emit({})
+            return
+        self._selected_patient_id = clicked_id
         self._update_card_selection()
         self.patient_selected.emit(patient)
 
