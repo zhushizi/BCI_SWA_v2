@@ -4,6 +4,7 @@ from __future__ import annotations
 '''
 import logging
 import ctypes
+import re
 from typing import Optional
 
 from PySide6.QtWidgets import QWidget, QLineEdit
@@ -65,30 +66,50 @@ class SetPageController:
             self.nes_port = self.hardware_config_app.get_nes_port()
 
         combo = get_ui_attr(self.ui, "comboBox_decoder_port")
+        nes_combo = get_ui_attr(self.ui, "comboBox_NES_port")
+        detected_decoder_port, detected_nes_port, display_ports = self._build_detected_port_displays()
+
+        # 规则优先：CH340 -> 电刺激设备(NES)；串行设备 -> 头环(decoder)
+        if detected_decoder_port:
+            self.decoder_port = detected_decoder_port
+        if detected_nes_port:
+            self.nes_port = detected_nes_port
+
         if combo:
             prev_block = combo.blockSignals(True)
-            ports = self._list_available_ports()
+            ports = list(display_ports)
             if self.decoder_port and self.decoder_port not in ports:
                 ports.insert(0, self.decoder_port)
             combo.clear()
             if ports:
-                combo.addItems(ports)
+                for port in ports:
+                    combo.addItem(self._format_decoder_display(port), port)
             if self.decoder_port:
-                combo.setCurrentText(self.decoder_port)
+                idx = combo.findData(self.decoder_port)
+                if idx >= 0:
+                    combo.setCurrentIndex(idx)
             combo.blockSignals(prev_block)
 
-        nes_combo = get_ui_attr(self.ui, "comboBox_NES_port")
         if nes_combo:
             prev_block = nes_combo.blockSignals(True)
-            nes_ports = self._list_available_ports()
+            nes_ports = list(display_ports)
             if self.nes_port and self.nes_port not in nes_ports:
                 nes_ports.insert(0, self.nes_port)
             nes_combo.clear()
             if nes_ports:
-                nes_combo.addItems(nes_ports)
+                for port in nes_ports:
+                    nes_combo.addItem(self._format_nes_display(port), port)
             if self.nes_port:
-                nes_combo.setCurrentText(self.nes_port)
+                idx = nes_combo.findData(self.nes_port)
+                if idx >= 0:
+                    nes_combo.setCurrentIndex(idx)
             nes_combo.blockSignals(prev_block)
+
+        # 自动连接到识别出的对应设备串口
+        if detected_decoder_port:
+            self._on_decoder_port_changed(detected_decoder_port)
+        if detected_nes_port:
+            self._on_nes_port_changed(detected_nes_port)
         self._init_volume_controls()
         self._init_account_controls()
 
@@ -242,7 +263,7 @@ class SetPageController:
         slider.setValue(max(slider.minimum(), slider.value() - step))
 
     def _on_decoder_port_changed(self, text: str) -> None:
-        next_port = str(text or "").strip()
+        next_port = self._extract_port_device(text)
         if not next_port:
             return
         if self.decoder_port == next_port:
@@ -254,7 +275,7 @@ class SetPageController:
                 self.logger.warning("切换解码器端口失败: %s", next_port)
 
     def _on_nes_port_changed(self, text: str) -> None:
-        next_port = str(text or "").strip()
+        next_port = self._extract_port_device(text)
         if not next_port:
             return
         if self.nes_port == next_port:
@@ -366,3 +387,54 @@ class SetPageController:
             return list(self.hardware_config_app.list_available_ports())
         except Exception:
             return []
+
+    @staticmethod
+    def _extract_port_device(text: str) -> str:
+        raw = str(text or "").strip()
+        if not raw:
+            return ""
+        # 兼容 "COM3（头环）" / "COM3 (电刺激设备)" 等展示文案
+        match = re.match(r"^\s*([A-Za-z]+[0-9]+)\b", raw)
+        if match:
+            return match.group(1).upper()
+        return raw
+
+    def _scan_port_descriptions(self) -> dict[str, str]:
+        try:
+            from serial.tools import list_ports
+            mapping: dict[str, str] = {}
+            for p in list_ports.comports():
+                dev = str(getattr(p, "device", "") or "").strip().upper()
+                desc = str(getattr(p, "description", "") or "").strip()
+                if dev:
+                    mapping[dev] = desc
+            return mapping
+        except Exception:
+            return {}
+
+    def _build_detected_port_displays(self) -> tuple[Optional[str], Optional[str], list[str]]:
+        ports = [str(p).strip().upper() for p in self._list_available_ports() if str(p).strip()]
+        desc_map = self._scan_port_descriptions()
+        detected_decoder_port: Optional[str] = None
+        detected_nes_port: Optional[str] = None
+
+        for port in ports:
+            desc = (desc_map.get(port) or "").lower()
+            if ("ch340" in desc) and (detected_nes_port is None):
+                detected_nes_port = port
+            if (("串行设备" in desc) or ("serial device" in desc)) and (detected_decoder_port is None):
+                detected_decoder_port = port
+
+        return detected_decoder_port, detected_nes_port, ports
+
+    def _format_decoder_display(self, port: str) -> str:
+        target = self._extract_port_device(port)
+        if target and self.decoder_port and target == self.decoder_port:
+            return f"{target}（头环）"
+        return target or str(port or "").strip()
+
+    def _format_nes_display(self, port: str) -> str:
+        target = self._extract_port_device(port)
+        if target and self.nes_port and target == self.nes_port:
+            return f"{target}（电刺激设备）"
+        return target or str(port or "").strip()
