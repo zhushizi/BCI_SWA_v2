@@ -5,7 +5,7 @@ import time
 from typing import Optional
 
 from PySide6.QtCore import QEvent, QObject, QTimer, Qt, Signal
-from PySide6.QtGui import QRegion
+from PySide6.QtGui import QColor, QRegion
 from PySide6.QtWidgets import QMessageBox, QVBoxLayout, QLabel
 
 from ui.dialogs.tips_dialog import TipsDialog
@@ -235,11 +235,18 @@ class StimTestController:
             # 否则在 widget_pulsewidth 内部创建一个滚轮，并让其铺满该区域，
             # 以 widget_pulsewidth 在 .ui 中的 geometry 作为最终位置。
             wheel = WheelWidget(host)
-            wheel.setGeometry(host.rect())
+            wheel.setGeometry(0, 0, host.width(), host.height())
 
         # 使用实际脉冲宽度值（ms）作为显示文本，例如 "800 ms"
         labels = [f"{v} ms" for v in PULSEWIDTH_VALUES]
+        wheel.set_visible_row_count(7)
+        wheel.set_item_colors(selected=QColor(88, 122, 244), unselected=QColor(0, 0, 0))
         wheel.set_values(labels)
+
+        # 三角由 .ui 内 label_27 展示，置于滚轮之上避免被遮挡
+        triangle_label = get_ui_attr(host, "label_27")
+        if triangle_label is not None:
+            triangle_label.raise_()
 
         idx = max(0, min(len(PULSEWIDTH_VALUES) - 1, int(self._pulsewidth_index)))
         wheel.set_current_index(idx)

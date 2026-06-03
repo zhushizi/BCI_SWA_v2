@@ -4308,22 +4308,22 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <widget class="QLabel" name="label_34">
        <property name="geometry">
         <rect>
-         <x>1130</x>
-         <y>226</y>
-         <width>361</width>
-         <height>401</height>
+         <x>1170</x>
+         <y>130</y>
+         <width>261</width>
+         <height>559</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>0</width>
-         <height>0</height>
+         <width>261</width>
+         <height>559</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>730</width>
-         <height>2333</height>
+         <width>261</width>
+         <height>559</height>
         </size>
        </property>
        <property name="styleSheet">
@@ -4398,32 +4398,60 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <widget class="QWidget" name="widget_pulsewidth" native="true">
        <property name="geometry">
         <rect>
-         <x>1130</x>
-         <y>230</y>
-         <width>360</width>
-         <height>401</height>
+         <x>1170</x>
+         <y>130</y>
+         <width>261</width>
+         <height>559</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>360</width>
-         <height>360</height>
+         <width>261</width>
+         <height>559</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>360</width>
-         <height>3600</height>
+         <width>261</width>
+         <height>559</height>
         </size>
        </property>
+       <widget class="QLabel" name="label_27">
+        <property name="geometry">
+         <rect>
+          <x>224</x>
+          <y>277</y>
+          <width>13</width>
+          <height>12</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>13</width>
+          <height>12</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>13</width>
+          <height>12</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">border-image: url(:/set/pic/icon_triangle.png);</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="widget_pulsewidth_silder" native="true">
        <property name="geometry">
         <rect>
          <x>1520</x>
-         <y>250</y>
+         <y>150</y>
          <width>101</width>
-         <height>361</height>
+         <height>511</height>
         </rect>
        </property>
       </widget>
@@ -4446,8 +4474,8 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <widget class="QLabel" name="label_51">
        <property name="geometry">
         <rect>
-         <x>1260</x>
-         <y>110</y>
+         <x>1310</x>
+         <y>20</y>
          <width>241</width>
          <height>31</height>
         </rect>
@@ -4486,8 +4514,8 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <widget class="QLabel" name="label_57">
        <property name="geometry">
         <rect>
-         <x>1290</x>
-         <y>180</y>
+         <x>1340</x>
+         <y>60</y>
          <width>191</width>
          <height>18</height>
         </rect>
@@ -4552,7 +4580,7 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
        <property name="geometry">
         <rect>
          <x>1540</x>
-         <y>230</y>
+         <y>130</y>
          <width>61</width>
          <height>16</height>
         </rect>
@@ -4568,7 +4596,7 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
        <property name="geometry">
         <rect>
          <x>1530</x>
-         <y>620</y>
+         <y>670</y>
          <width>81</width>
          <height>16</height>
         </rect>
@@ -4583,8 +4611,8 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <widget class="QLabel" name="label_60">
        <property name="geometry">
         <rect>
-         <x>446</x>
-         <y>90</y>
+         <x>460</x>
+         <y>30</y>
          <width>161</width>
          <height>31</height>
         </rect>

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional, Sequence
 
 from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QColor, QFont, QPainter, QMouseEvent
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QMouseEvent
 from PySide6.QtWidgets import QWidget
 
 
@@ -72,6 +72,21 @@ class WheelWidget(QWidget):
     def current_index(self) -> int:
         return self._current_index
 
+    def set_visible_row_count(self, row_count: int) -> None:
+        """设置滚轮可见行数；使用奇数行以保证选中项位于正中。"""
+        count = max(1, int(row_count))
+        if count % 2 == 0:
+            count += 1
+        if count != self._row_count_visible:
+            self._row_count_visible = count
+            self.update()
+
+    def set_item_colors(self, selected: QColor, unselected: QColor) -> None:
+        """设置选中项与未选中项文字颜色。"""
+        self._center_color = QColor(selected)
+        self._side_color = QColor(unselected)
+        self.update()
+
     # ---------- 内部绘制 ----------
     def paintEvent(self, event) -> None:  # type: ignore[override]
         painter = QPainter(self)
@@ -87,15 +102,17 @@ class WheelWidget(QWidget):
             return
 
         center_y = rect.center().y()
-        # 5 行可见，行距按高度等分
+        # 可见行按高度等分，中间行表示当前选中值。
         line_spacing = rect.height() / float(self._row_count_visible)
 
-        for offset in range(-2, 3):
+        half_visible = self._row_count_visible // 2
+        for offset in range(-half_visible, half_visible + 1):
+            # 固定 7 行槽位：越界也保留行高，避免靠近首尾时行被挤压、选中项偏位
+            y = center_y + offset * line_spacing
             idx = self._current_index + offset
             if idx < 0 or idx >= len(self._values):
                 continue
 
-            y = center_y + offset * line_spacing
             text = self._values[idx]
 
             # 根据距离中心的偏移设置字号和透明度
@@ -107,8 +124,8 @@ class WheelWidget(QWidget):
                 font_size = 22
                 alpha = 180
             else:
-                font_size = 18
-                alpha = 120
+                font_size = 18 if dist == 2 else 16
+                alpha = 120 if dist == 2 else 80
 
             font = QFont(self._base_font_family, font_size)
             painter.setFont(font)
