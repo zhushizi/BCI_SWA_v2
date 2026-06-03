@@ -270,7 +270,7 @@ QTabWidget#tabWidget_main QTabBar::tab {
 }</string>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -3324,7 +3324,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -4187,11 +4187,23 @@ border-radius: 8px;</string>
       <widget class="QPushButton" name="pushButton_right_turnsmall">
        <property name="geometry">
         <rect>
-         <x>350</x>
-         <y>560</y>
-         <width>71</width>
-         <height>71</height>
+         <x>378</x>
+         <y>572</y>
+         <width>42</width>
+         <height>39</height>
         </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>42</width>
+         <height>39</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>42</width>
+         <height>39</height>
+        </size>
        </property>
        <property name="styleSheet">
         <string notr="true">border-image: url(:/preprocess/pic/preprocess_eleTurnSmall.png);</string>
@@ -4234,11 +4246,23 @@ border-radius: 8px;</string>
       <widget class="QPushButton" name="pushButton_right_turnbig">
        <property name="geometry">
         <rect>
-         <x>650</x>
-         <y>560</y>
-         <width>71</width>
-         <height>71</height>
+         <x>656</x>
+         <y>571</y>
+         <width>42</width>
+         <height>39</height>
         </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>42</width>
+         <height>39</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>42</width>
+         <height>39</height>
+        </size>
        </property>
        <property name="styleSheet">
         <string notr="true">border-image: url(:/preprocess/pic/preprocess_eleTurnBig.png);</string>
@@ -4334,7 +4358,7 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <widget class="QLabel" name="label_50">
        <property name="geometry">
         <rect>
-         <x>470</x>
+         <x>460</x>
          <y>580</y>
          <width>161</width>
          <height>31</height>
@@ -4559,7 +4583,7 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <widget class="QLabel" name="label_60">
        <property name="geometry">
         <rect>
-         <x>440</x>
+         <x>446</x>
          <y>90</y>
          <width>161</width>
          <height>31</height>
