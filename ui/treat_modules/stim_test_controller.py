@@ -285,9 +285,13 @@ class StimTestController:
 
         if isinstance(host, SliderWidget):
             slider = host
+            slider.setGeometry(0, 0, host.width(), host.height())
         else:
             slider = SliderWidget(host)
-            slider.setGeometry(host.rect())
+            slider.setGeometry(0, 0, host.width(), host.height())
+
+        slider.set_vertical_style("pill")
+        slider.set_tick_count(5)
 
         max_index = max(0, len(PULSEWIDTH_VALUES) - 1)
         slider.set_range(0, max_index)

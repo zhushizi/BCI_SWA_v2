@@ -37,6 +37,15 @@ class SliderWidget(QWidget):
         self._handle_color = QColor(88, 122, 244)
         self._handle_inner_color = QColor(255, 255, 255)
         self._track_base_color = QColor(255, 255, 255)
+        # vertical_style: "gradient" 默认；"pill" 为脉冲宽度参考图样式
+        self._vertical_style = "gradient"
+        self._tick_count = 0
+        self._pill_track_width = 18.0
+        self._pill_handle_radius = 13.0
+        self._pill_track_idle = QColor(233, 237, 245)
+        self._pill_track_active = QColor(88, 122, 244)
+        self._pill_tick_idle = QColor(196, 202, 214)
+        self._pill_tick_active = QColor(255, 255, 255)
         self._apply_active_palette()
 
         # 默认允许薄横向条；竖向宿主在首次 resize 后会提高到 120
@@ -64,6 +73,22 @@ class SliderWidget(QWidget):
 
     def value(self) -> int:
         return self._value
+
+    def set_vertical_style(self, style: str) -> None:
+        """竖直滑杆样式：gradient（默认）或 pill（圆角轨道 + 刻度点 + 白色手柄）。"""
+        style = str(style or "gradient").lower()
+        if style not in ("gradient", "pill"):
+            style = "gradient"
+        if style != self._vertical_style:
+            self._vertical_style = style
+            self.update()
+
+    def set_tick_count(self, count: int) -> None:
+        """竖直 pill 样式下沿轨道绘制的刻度点数量；0 表示不绘制。"""
+        count = max(0, int(count))
+        if count != self._tick_count:
+            self._tick_count = count
+            self.update()
 
     def _apply_active_palette(self) -> None:
         self._track_border_color = QColor(224, 228, 235)
@@ -134,18 +159,35 @@ class SliderWidget(QWidget):
             effective_len = max(1.0, track_rect.width() - 2.0 * radius)
             return track_rect, radius, effective_len
 
-        margin_x = rect.width() * 0.3
         margin_y = rect.height() * 0.08
-        track_width = max(10.0, rect.width() - 2 * margin_x)
-        track_rect = QRectF(
-            rect.center().x() - track_width / 2.0,
-            rect.top() + margin_y,
-            track_width,
-            max(20.0, rect.height() - 2 * margin_y),
-        )
+        if self._vertical_style == "pill":
+            # 按宿主宽度比例取轨道宽（约 101px 宿主 → 22px 轨道）
+            track_width = max(self._pill_track_width, min(26.0, rect.width() * 0.22))
+            track_rect = QRectF(
+                rect.center().x() - track_width / 2.0,
+                rect.top() + margin_y,
+                track_width,
+                max(20.0, rect.height() - 2 * margin_y),
+            )
+        else:
+            margin_x = rect.width() * 0.3
+            track_width = max(10.0, rect.width() - 2 * margin_x)
+            track_rect = QRectF(
+                rect.center().x() - track_width / 2.0,
+                rect.top() + margin_y,
+                track_width,
+                max(20.0, rect.height() - 2 * margin_y),
+            )
         radius = track_rect.width() / 2.0
         effective_len = max(1.0, track_rect.height() - 2.0 * radius)
         return track_rect, radius, effective_len
+
+    def _handle_radius(self) -> float:
+        if self._vertical_style == "pill" and not self._is_horizontal():
+            _, track_radius, _ = self._track_geometry()
+            return max(self._pill_handle_radius, track_radius * 1.45)
+        _, radius, _ = self._track_geometry()
+        return radius
 
     def _value_ratio(self) -> float:
         if self._max_value <= self._min_value:
@@ -179,24 +221,68 @@ class SliderWidget(QWidget):
         value = self._min_value + t * (self._max_value - self._min_value)
         return int(round(value))
 
-    # ----------- 绘制 -----------
-    def paintEvent(self, event) -> None:  # type: ignore[override]
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing, True)
+    def _paint_vertical_pill(self, painter: QPainter) -> None:
+        track_rect, radius, _ = self._track_geometry()
+        handle_center = self._handle_center()
+        hr = self._handle_radius()
 
-        # 使用透明色清理自身区域，保留父级背景
-        painter.fillRect(self.rect(), self._bg_color)
+        path_track = QPainterPath()
+        path_track.addRoundedRect(track_rect, radius, radius)
 
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self._pill_track_idle if self.isEnabled() else self._track_base_color)
+        painter.drawPath(path_track)
+
+        fill_top = track_rect.top()
+        fill_h = max(0.0, handle_center.y() - fill_top)
+        if fill_h > 0:
+            fill_rect = QRectF(track_rect.left(), fill_top, track_rect.width(), fill_h)
+            painter.save()
+            painter.setClipPath(path_track)
+            painter.fillRect(fill_rect, self._pill_track_active if self.isEnabled() else self._track_fill_bottom)
+            painter.restore()
+
+        tick_n = self._tick_count
+        if tick_n >= 2 and self.isEnabled():
+            travel_top = track_rect.top() + radius
+            travel_bottom = track_rect.bottom() - radius
+            dot_r = max(2.8, track_rect.width() * 0.16)
+            cx = track_rect.center().x()
+            for i in range(tick_n):
+                t = i / float(tick_n - 1)
+                y = travel_top + t * (travel_bottom - travel_top)
+                on_active = y <= handle_center.y() + 0.5
+                color = self._pill_tick_active if on_active else self._pill_tick_idle
+                painter.setBrush(color)
+                painter.drawEllipse(QPointF(cx, y), dot_r, dot_r)
+
+        shadow_rect = QRectF(
+            handle_center.x() - hr,
+            handle_center.y() - hr + 1.0,
+            hr * 2.0,
+            hr * 2.0,
+        )
+        painter.setBrush(QColor(0, 0, 0, 35))
+        painter.drawEllipse(shadow_rect)
+
+        handle_rect = QRectF(
+            handle_center.x() - hr,
+            handle_center.y() - hr,
+            hr * 2.0,
+            hr * 2.0,
+        )
+        painter.setBrush(QColor(255, 255, 255) if self.isEnabled() else self._handle_inner_color)
+        painter.drawEllipse(handle_rect)
+
+    def _paint_default(self, painter: QPainter) -> None:
         track_rect, radius, _ = self._track_geometry()
 
-        # 轨道（带倒角）
         path_track = QPainterPath()
         path_track.addRoundedRect(track_rect, radius, radius)
         painter.setPen(QPen(self._track_border_color, 1))
         painter.setBrush(QBrush(self._track_base_color))
         painter.drawPath(path_track)
 
-        # 填充部分：竖直为顶部到手柄；横向为左侧到手柄
         handle_center = self._handle_center()
         if self._is_horizontal():
             fill_left = track_rect.left()
@@ -224,14 +310,12 @@ class SliderWidget(QWidget):
         if should_fill:
             gradient.setColorAt(0.0, self._track_fill_top)
             gradient.setColorAt(1.0, self._track_fill_bottom)
-
             painter.save()
             painter.setClipPath(path_track)
             painter.fillRect(fill_rect, gradient)
             painter.restore()
 
-        # 圆形手柄：外圈为轨道宽度（与轨道两侧相切），内圈为白色
-        hr = radius
+        hr = self._handle_radius()
         handle_rect = QRectF(
             handle_center.x() - hr,
             handle_center.y() - hr,
@@ -252,6 +336,17 @@ class SliderWidget(QWidget):
         painter.setBrush(QBrush(self._handle_inner_color))
         painter.drawEllipse(inner_rect)
 
+    # ----------- 绘制 -----------
+    def paintEvent(self, event) -> None:  # type: ignore[override]
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.fillRect(self.rect(), self._bg_color)
+
+        if self._vertical_style == "pill" and not self._is_horizontal():
+            self._paint_vertical_pill(painter)
+        else:
+            self._paint_default(painter)
+
     # ----------- 交互 -----------
     def mousePressEvent(self, event: QMouseEvent) -> None:  # type: ignore[override]
         if event.button() != Qt.LeftButton:
@@ -259,8 +354,8 @@ class SliderWidget(QWidget):
             return
 
         handle_center = self._handle_center()
-        track_rect, radius, _ = self._track_geometry()
-        hr = radius
+        track_rect, _, _ = self._track_geometry()
+        hr = self._handle_radius()
         dx = event.position().x() - handle_center.x()
         dy = event.position().y() - handle_center.y()
         if dx * dx + dy * dy <= (hr + 4.0) * (hr + 4.0):
