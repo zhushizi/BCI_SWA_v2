@@ -270,7 +270,7 @@ QTabWidget#tabWidget_main QTabBar::tab {
 }</string>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -353,7 +353,7 @@ QTabWidget#tabWidget QTabBar::tab {
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
@@ -2004,7 +2004,7 @@ QTabBar::tab:hover:!selected {
 }</string>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>2</number>
        </property>
        <widget class="QWidget" name="tab_set_system">
         <attribute name="title">
@@ -2167,7 +2167,7 @@ QTabBar::tab:hover:!selected {
           <string notr="true">color: #4A4A4A;</string>
          </property>
          <property name="text">
-          <string>南京华伟智脑康联科技有限公司对本软件拥有一切法定权利、所有权和利益，严禁对本软件进行各种形式的复制和修改，违者将追究其法律责任。最终解释权归南京华伟华智脑康联科技有限公司所有。</string>
+          <string>南京华伟智脑康联科技有限公司对本软件拥有一切法定权利、所有权和利益，严禁对本软件进行各种形式的复制和修改，违者将追究其法律责任。最终解释权归南京华伟智脑康联科技有限公司所有。</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -3195,7 +3195,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
        <x>29</x>
        <y>860</y>
        <width>111</width>
-       <height>20</height>
+       <height>41</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -3211,9 +3211,9 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
     <widget class="QLabel" name="label_department">
      <property name="geometry">
       <rect>
-       <x>49</x>
-       <y>890</y>
-       <width>71</width>
+       <x>29</x>
+       <y>906</y>
+       <width>111</width>
        <height>20</height>
       </rect>
      </property>

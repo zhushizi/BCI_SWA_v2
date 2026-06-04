@@ -182,18 +182,60 @@ class MainWindowNavigation:
 class MainWindowUserInfo:
     _CONFIG_KEY_HOSPITAL = "hospital_name"
     _CONFIG_KEY_DEPARTMENT = "department_name"
+    _HOSPITAL_TEXT_MAX_LEN = 18
+    _DEPARTMENT_TEXT_MAX_LEN = 9
 
     def __init__(self, host):
         self._host = host
         self.ui = host.ui
 
     def bind(self) -> None:
+        self._configure_org_inputs()
         btn_confirm = get_ui_attr(self.ui, "pushButton_other_confirm")
         safe_connect(
             self._host.logger,
             getattr(btn_confirm, "clicked", None),
             self._on_other_confirm,
         )
+        btn_reset = get_ui_attr(self.ui, "pushButton_other_reset")
+        safe_connect(
+            self._host.logger,
+            getattr(btn_reset, "clicked", None),
+            self._on_other_reset,
+        )
+
+    def _configure_org_inputs(self) -> None:
+        hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
+        if hospital_edit is not None:
+            safe_call(
+                self._host.logger,
+                getattr(hospital_edit, "setMaxLength", None),
+                self._HOSPITAL_TEXT_MAX_LEN,
+            )
+        department_edit = get_ui_attr(self.ui, "lineEdit_department_name")
+        if department_edit is not None:
+            safe_call(
+                self._host.logger,
+                getattr(department_edit, "setMaxLength", None),
+                self._DEPARTMENT_TEXT_MAX_LEN,
+            )
+        for name in ("label_hosipital", "label_department"):
+            label = get_ui_attr(self.ui, name)
+            if label is not None:
+                safe_call(self._host.logger, getattr(label, "setWordWrap", None), True)
+
+    @staticmethod
+    def _normalize_org_text(text: str, max_len: int) -> str:
+        return str(text or "").strip()[: max(1, int(max_len))]
+
+    @classmethod
+    def _format_org_display(cls, text: str, max_len: int) -> str:
+        """展示用：每行最多 max_len 个字，超出换行。"""
+        normalized = cls._normalize_org_text(text, max_len)
+        if not normalized:
+            return ""
+        chunk = max(1, int(max_len))
+        return "\n".join(normalized[i : i + chunk] for i in range(0, len(normalized), chunk))
 
     def display_user_info(self) -> None:
         if not self._host.user_app.is_authenticated:
@@ -214,17 +256,29 @@ class MainWindowUserInfo:
         config_app = getattr(self._host, "config_app", None)
         if not config_app:
             return
-        hospital = str(config_app.get(self._CONFIG_KEY_HOSPITAL, "") or "").strip()
-        department = str(config_app.get(self._CONFIG_KEY_DEPARTMENT, "") or "").strip()
+        hospital = self._normalize_org_text(
+            config_app.get(self._CONFIG_KEY_HOSPITAL, "") or "",
+            self._HOSPITAL_TEXT_MAX_LEN,
+        )
+        department = self._normalize_org_text(
+            config_app.get(self._CONFIG_KEY_DEPARTMENT, "") or "",
+            self._DEPARTMENT_TEXT_MAX_LEN,
+        )
         self._apply_org_info(hospital, department)
 
     def _apply_org_info(self, hospital: str, department: str) -> None:
+        hospital = self._normalize_org_text(hospital, self._HOSPITAL_TEXT_MAX_LEN)
+        department = self._normalize_org_text(department, self._DEPARTMENT_TEXT_MAX_LEN)
         hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
         hospital_label = get_ui_attr(self.ui, "label_hosipital")
         if hospital_edit:
             safe_call(self._host.logger, getattr(hospital_edit, "setText", None), hospital)
         if hospital_label:
-            safe_call(self._host.logger, getattr(hospital_label, "setText", None), hospital)
+            safe_call(
+                self._host.logger,
+                getattr(hospital_label, "setText", None),
+                self._format_org_display(hospital, self._HOSPITAL_TEXT_MAX_LEN),
+            )
         department_edit = get_ui_attr(self.ui, "lineEdit_department_name")
         department_label = get_ui_attr(self.ui, "label_department")
         if department_edit:
@@ -233,15 +287,10 @@ class MainWindowUserInfo:
             safe_call(
                 self._host.logger,
                 getattr(department_label, "setText", None),
-                department,
+                self._format_org_display(department, self._DEPARTMENT_TEXT_MAX_LEN),
             )
 
-    def _on_other_confirm(self) -> None:
-        hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
-        department_edit = get_ui_attr(self.ui, "lineEdit_department_name")
-        hospital = hospital_edit.text().strip() if hospital_edit else ""
-        department = department_edit.text().strip() if department_edit else ""
-        self._apply_org_info(hospital, department)
+    def _save_org_info(self, hospital: str, department: str) -> None:
         config_app = getattr(self._host, "config_app", None)
         if not config_app:
             return
@@ -253,6 +302,25 @@ class MainWindowUserInfo:
         )
         if not ok:
             self._host.logger.warning("保存医院/科室配置失败")
+
+    def _on_other_confirm(self) -> None:
+        hospital_edit = get_ui_attr(self.ui, "lineEdit_hospital_name")
+        department_edit = get_ui_attr(self.ui, "lineEdit_department_name")
+        hospital = self._normalize_org_text(
+            hospital_edit.text() if hospital_edit else "",
+            self._HOSPITAL_TEXT_MAX_LEN,
+        )
+        department = self._normalize_org_text(
+            department_edit.text() if department_edit else "",
+            self._DEPARTMENT_TEXT_MAX_LEN,
+        )
+        self._apply_org_info(hospital, department)
+        self._save_org_info(hospital, department)
+
+    def _on_other_reset(self) -> None:
+        """重置：清空医院/科室输入与主界面展示，并写入配置。"""
+        self._apply_org_info("", "")
+        self._save_org_info("", "")
 
 
 class MainWindowDeviceStatus:
