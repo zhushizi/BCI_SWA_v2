@@ -270,7 +270,7 @@ QTabWidget#tabWidget_main QTabBar::tab {
 }</string>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -3324,7 +3324,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -4581,7 +4581,7 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
         <rect>
          <x>1540</x>
          <y>130</y>
-         <width>61</width>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -4589,7 +4589,7 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
         <string notr="true">color: rgb(88, 122, 244);</string>
        </property>
        <property name="text">
-        <string>最小：0ms</string>
+        <string>最小：10ms</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_pulsewidth_max">

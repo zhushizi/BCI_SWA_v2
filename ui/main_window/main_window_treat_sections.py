@@ -925,7 +925,8 @@ class TreatNavigation:
         else:
             threshold2_real = self._get_threshold2_value() * self.THRESHOLD2_STEP
 
-        alpha = (float(threshold2_real) / float(threshold1)) if threshold1 > 0 else 0.0
+        raw_alpha = (float(threshold2_real) / float(threshold1)) if threshold1 > 0 else 0.0
+        alpha = raw_alpha / 2.0
 
         alpha_label = get_ui_attr(self.ui, "label_alpha")
         if alpha_label is not None:
