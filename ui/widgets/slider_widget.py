@@ -40,10 +40,10 @@ class SliderWidget(QWidget):
         # vertical_style: "gradient" 默认；"pill" 为脉冲宽度参考图样式
         self._vertical_style = "gradient"
         self._tick_count = 0
-        self._pill_track_width = 18.0
-        self._pill_handle_radius = 13.0
+        self._pill_track_width = 24.0
+        self._pill_handle_radius = 15.0
         self._pill_track_idle = QColor(233, 237, 245)
-        self._pill_track_active = QColor(88, 122, 244)
+        self._pill_track_active = QColor(0x78, 0x9E, 0xFF)  # #789EFF
         self._pill_tick_idle = QColor(196, 202, 214)
         self._pill_tick_active = QColor(255, 255, 255)
         self._apply_active_palette()
@@ -161,8 +161,8 @@ class SliderWidget(QWidget):
 
         margin_y = rect.height() * 0.08
         if self._vertical_style == "pill":
-            # 按宿主宽度比例取轨道宽（约 101px 宿主 → 22px 轨道）
-            track_width = max(self._pill_track_width, min(26.0, rect.width() * 0.22))
+            # 按宿主宽度比例取轨道宽（约 120px 宿主 → 34px 轨道）
+            track_width = max(self._pill_track_width, min(36.0, rect.width() * 0.28))
             track_rect = QRectF(
                 rect.center().x() - track_width / 2.0,
                 rect.top() + margin_y,
@@ -185,7 +185,7 @@ class SliderWidget(QWidget):
     def _handle_radius(self) -> float:
         if self._vertical_style == "pill" and not self._is_horizontal():
             _, track_radius, _ = self._track_geometry()
-            return max(self._pill_handle_radius, track_radius * 1.45)
+            return max(self._pill_handle_radius, track_radius * 1.6)
         _, radius, _ = self._track_geometry()
         return radius
 

@@ -4126,34 +4126,34 @@ border-radius: 8px;</string>
       <widget class="QPushButton" name="pushButton_next">
        <property name="geometry">
         <rect>
-         <x>990</x>
-         <y>770</y>
-         <width>221</width>
-         <height>55</height>
+         <x>1020</x>
+         <y>780</y>
+         <width>141</width>
+         <height>50</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>0</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>242</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>26</pointsize>
+         <pointsize>14</pointsize>
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgba(120, 158, 255, 1); color: rgba(255, 255, 255, 1); border-radius: 12.6px;</string>
+        <string notr="true">background-color: rgba(120, 158, 255, 1); color: rgba(255, 255, 255, 1); border-radius: 8px;</string>
        </property>
        <property name="text">
-        <string>下一项</string>
+        <string>    下一项</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_5">
@@ -4274,35 +4274,35 @@ border-radius: 8px;</string>
       <widget class="QPushButton" name="pushButton_start_test">
        <property name="geometry">
         <rect>
-         <x>750</x>
-         <y>770</y>
-         <width>221</width>
-         <height>55</height>
+         <x>800</x>
+         <y>780</y>
+         <width>141</width>
+         <height>50</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>0</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>364</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>26</pointsize>
+         <pointsize>14</pointsize>
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">QPushButton { background-color: rgba(120, 158, 255, 1); color: rgba(255, 255, 255, 1); border-radius: 12.6px; }
-QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1); border-radius: 12.6px; }</string>
+        <string notr="true">QPushButton { background-color: rgba(120, 158, 255, 1); color: rgba(255, 255, 255, 1); border-radius: 8px; }
+QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1); border-radius: 8px; }</string>
        </property>
        <property name="text">
-        <string>开始测试</string>
+        <string>    开始测试</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_34">
@@ -4459,7 +4459,7 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
        <property name="geometry">
         <rect>
          <x>200</x>
-         <y>20</y>
+         <y>14</y>
          <width>681</width>
          <height>651</height>
         </rect>
@@ -4661,6 +4661,90 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
         <enum>Qt::Vertical</enum>
        </property>
       </widget>
+      <widget class="QLabel" name="label_28">
+       <property name="geometry">
+        <rect>
+         <x>820</x>
+         <y>797</y>
+         <width>14</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-image: url(:/set/pic/icon_start.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_29">
+       <property name="geometry">
+        <rect>
+         <x>1048</x>
+         <y>797</y>
+         <width>14</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-image: url(:/set/pic/icon_next.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_30">
+       <property name="geometry">
+        <rect>
+         <x>1323</x>
+         <y>64</y>
+         <width>13</width>
+         <height>13</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>13</width>
+         <height>13</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>13</width>
+         <height>13</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-image: url(:/set/pic/icon_warning.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
       <zorder>label_5</zorder>
       <zorder>label</zorder>
       <zorder>label_34</zorder>
@@ -4681,6 +4765,9 @@ QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1);
       <zorder>widget_circle_level_right</zorder>
       <zorder>label_60</zorder>
       <zorder>line_7</zorder>
+      <zorder>label_28</zorder>
+      <zorder>label_29</zorder>
+      <zorder>label_30</zorder>
      </widget>
      <widget class="QWidget" name="tab_4">
       <attribute name="title">

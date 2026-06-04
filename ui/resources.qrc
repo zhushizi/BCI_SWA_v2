@@ -144,6 +144,9 @@
         <file>pic/脑机接口-上下肢-21.png</file>
         <file>pic/icon_hosipital.png</file>
         <file>pic/icon_triangle.png</file>
+        <file>pic/icon_start.png</file>
+        <file>pic/icon_next.png</file>
+        <file>pic/icon_warning.png</file>
     </qresource>
 
     <qresource prefix="/eval">

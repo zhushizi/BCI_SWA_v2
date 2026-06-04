@@ -22,6 +22,18 @@ from application.stim_test_app import StimTestApp
 from service.business.hardware.dd_ack_retry import DdAckRetrySender
 from ui.core.utils import get_ui_attr, safe_call, safe_connect
 
+# pushButton_start_test：与 main_window.ui 一致（前导空格为 label_28 图标留位）
+_START_TEST_BTN_TEXT_IDLE = "    开始测试"
+_START_TEST_BTN_TEXT_RUNNING = "    停止测试"
+_START_TEST_BTN_STYLE_IDLE = (
+    "QPushButton { background-color: rgba(120, 158, 255, 1); color: rgba(255, 255, 255, 1); border-radius: 8px; }\n"
+    "QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1); border-radius: 8px; }"
+)
+_START_TEST_BTN_STYLE_RUNNING = (
+    "QPushButton { background-color: #F48438; color: rgba(255, 255, 255, 1); border-radius: 8px; }\n"
+    "QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1); border-radius: 8px; }"
+)
+
 
 class _StimSerialAckBridge(QObject):
     """串口接收线程 -> Qt 主线程：应答后启停定时器/改 UI 须经此转发。"""
@@ -429,16 +441,10 @@ class StimTestController:
             safe_call(
                 self._logger,
                 getattr(start_btn, "setText", None),
-                "停止测试" if self._test_running else "开始测试",
+                _START_TEST_BTN_TEXT_RUNNING if self._test_running else _START_TEST_BTN_TEXT_IDLE,
             )
-            # 开始测试：背景 #789EFF、白色字体；停止测试：背景 #F48438、白色字体；保留倒角与 .ui 一致
-            bg = "#F48438" if self._test_running else "#789EFF"
-            safe_call(
-                self._logger,
-                getattr(start_btn, "setStyleSheet", None),
-                f"QPushButton {{ background-color: {bg}; color: white; border-radius: 12.6px; }} "
-                f"QPushButton:disabled {{ background-color: #707070; color: white; border-radius: 12.6px; }}",
-            )
+            style = _START_TEST_BTN_STYLE_RUNNING if self._test_running else _START_TEST_BTN_STYLE_IDLE
+            safe_call(self._logger, getattr(start_btn, "setStyleSheet", None), style)
 
         # 左右通道档位调节按钮：在线即可点，未开始测试时点击会弹提示
         for btn_name in (
