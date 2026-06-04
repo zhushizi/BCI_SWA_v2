@@ -30,6 +30,7 @@ class BCIWaveWidget(QWidget):
         self._draw_labels = True
         self._channel_labels: list[str] = []
         self._hidden_channel_indices: set[int] = set()
+        self._extra_channel_labels: list[str] = []
         self._default_channel_count = 16
 
     def update_eeg(self, eeg_data: Any, timestamp: Optional[float] = None) -> None:
@@ -53,7 +54,13 @@ class BCIWaveWidget(QWidget):
             if label.upper() == "NONE":
                 label = ""
             labels.append(label)
+        labels.extend(self._extra_channel_labels)
         return labels
+
+    def set_extra_channels(self, labels: list[str]) -> None:
+        """底部装饰通道：仅绘制水平直线，不参与 EEG 数据缓冲。"""
+        self._extra_channel_labels = [str(item or "").strip() for item in (labels or []) if str(item or "").strip()]
+        self.update()
 
     def set_channel_labels(self, labels: list[str]) -> None:
         sanitized: list[str] = []
@@ -70,19 +77,25 @@ class BCIWaveWidget(QWidget):
         rect = self.rect()
         painter.fillRect(rect, self._bg_color)
 
-        if self._eeg_data is None:
+        visible_eeg: list[list[float]] = []
+        visible_labels: list[str] = []
+        extra_labels = list(self._extra_channel_labels)
+
+        if self._eeg_data is not None:
+            eeg = self._to_2d_array(self._eeg_data)
+            if eeg is None:
+                if not extra_labels:
+                    painter.setPen(QPen(QColor(180, 180, 180), 1))
+                    painter.drawText(rect, Qt.AlignCenter, "波形格式不支持")
+                    return
+            else:
+                visible_eeg, visible_labels = self._filter_channels(eeg)
+        elif not extra_labels:
             painter.setPen(QPen(QColor(180, 180, 180), 1))
             painter.drawText(rect, Qt.AlignCenter, "暂无波形数据")
             return
 
-        eeg = self._to_2d_array(self._eeg_data)
-        if eeg is None:
-            painter.setPen(QPen(QColor(180, 180, 180), 1))
-            painter.drawText(rect, Qt.AlignCenter, "波形格式不支持")
-            return
-
-        visible_eeg, visible_labels = self._filter_channels(eeg)
-        n_chan = len(visible_eeg)
+        n_chan = len(visible_eeg) + len(extra_labels)
         if n_chan <= 0:
             return
 
@@ -120,6 +133,17 @@ class BCIWaveWidget(QWidget):
                 y = y_offset - v * y_scale
                 poly.append(QPointF(x, y))
             painter.drawPolyline(poly)
+
+        base_idx = len(visible_eeg)
+        for offset, label in enumerate(extra_labels):
+            row_idx = base_idx + offset
+            y_offset = (row_idx + 0.5) * channel_height
+            if self._draw_labels and label:
+                painter.setPen(self._label_color)
+                painter.drawText(6, int(y_offset - channel_height * 0.3), label)
+            painter.setPen(QPen(self._wave_color, 1))
+            y_mid = int(y_offset)
+            painter.drawLine(0, y_mid, width, y_mid)
 
     def _downsample(self, samples: list[float], max_points: int) -> list[float]:
         if len(samples) <= max_points:

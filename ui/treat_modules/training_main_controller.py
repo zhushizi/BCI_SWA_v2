@@ -22,7 +22,7 @@ class TrainingMainController:
 
     框架阶段：只负责 UI 交互 -> TrainingMainApp 的调用入口。
 
-    需要负责显示脑电波形13个通道
+    需要负责显示脑电波形（有效电极通道 + 底部 CH10/CH12/CH14 装饰直线）
     """
 
     def __init__(
@@ -162,6 +162,7 @@ class TrainingMainController:
         host.setStyleSheet("background-color: #FFFFFF;")
         self._wave_widget = BCIWaveWidget(host)
         self._wave_widget.set_draw_labels(False)
+        self._wave_widget.set_extra_channels(["CH10", "CH12", "CH14"])
         layout.addWidget(self._wave_widget)
         self._init_wave_label_panel(host)
 
