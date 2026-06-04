@@ -3324,7 +3324,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       </size>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -3379,25 +3379,25 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
         <rect>
          <x>790</x>
          <y>790</y>
-         <width>170</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>170</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>17055</width>
-         <height>16777215</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>22</pointsize>
+         <pointsize>14</pointsize>
         </font>
        </property>
        <property name="styleSheet">
@@ -3421,27 +3421,27 @@ QPushButton:disabled {
       <widget class="QPushButton" name="pushButton_neunext">
        <property name="geometry">
         <rect>
-         <x>990</x>
+         <x>1010</x>
          <y>790</y>
-         <width>170</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>170</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>170</width>
-         <height>55</height>
+         <width>141</width>
+         <height>50</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>22</pointsize>
+         <pointsize>14</pointsize>
         </font>
        </property>
        <property name="styleSheet">
@@ -4013,7 +4013,7 @@ border-radius: 8px;</string>
         <string notr="true"/>
        </property>
        <property name="text">
-        <string>max：250</string>
+        <string>max：500</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_eval_t2_min">

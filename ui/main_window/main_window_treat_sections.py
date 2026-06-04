@@ -383,6 +383,8 @@ class TreatNavigation:
         slider = SliderWidget(host)
         slider.setGeometry(host.rect())
         host.installEventFilter(_SliderHostResizeFilter(slider, host))
+        slider.set_vertical_style("pill")
+        slider.set_tick_count(5)
         slider.set_range(self.THRESHOLD1_MIN, self.THRESHOLD1_MAX)
         slider.set_value(0)
         stepper = self._threshold1_wheel
@@ -410,6 +412,8 @@ class TreatNavigation:
         slider = SliderWidget(host)
         slider.setGeometry(host.rect())
         host.installEventFilter(_SliderHostResizeFilter(slider, host))
+        slider.set_vertical_style("pill")
+        slider.set_tick_count(5)
         threshold2_count = (self.THRESHOLD2_MAX - self.THRESHOLD2_MIN) // self.THRESHOLD2_STEP + 1
         slider.set_range(0, threshold2_count - 1)
         slider.set_value(1)
