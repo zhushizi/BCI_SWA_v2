@@ -6,6 +6,9 @@ import sys
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+# 本机首次登录标记（空文件，与 config.json 分离）
+LOCAL_DEVICE_MARKER_FILENAME = "local_device.initialized"
+
 _EXE_PATH_KEYS = frozenset(
     {
         "decoder_exe",
@@ -40,6 +43,24 @@ def application_base_dir() -> Path:
                 return base
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parents[2]
+
+
+def config_dir() -> Path:
+    return Path(__file__).resolve().parent
+
+
+def local_device_marker_path() -> Path:
+    return config_dir() / LOCAL_DEVICE_MARKER_FILENAME
+
+
+def is_local_device_initialized() -> bool:
+    return local_device_marker_path().is_file()
+
+
+def mark_local_device_initialized() -> None:
+    path = local_device_marker_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
 
 
 def resolve_app_path(path: Optional[str]) -> Optional[str]:

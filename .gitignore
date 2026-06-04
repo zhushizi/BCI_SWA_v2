@@ -25,6 +25,7 @@ Desktop.ini
 *.log
 logs/
 runtime/
+infrastructure/config/local_device.initialized
 
 # PyInstaller
 *.manifest

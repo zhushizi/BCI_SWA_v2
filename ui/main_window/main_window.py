@@ -296,6 +296,13 @@ class MainWindow(QWidget):
         """切换顶级标签页 (0=治疗, 1=患者, 2=方案, 3=设置)"""
         self._nav.switch_tab(tab_index)
 
+    def open_password_change_page(self) -> None:
+        """跳转到设置页 -> 账号管理（密码修改）。"""
+        self._switch_tab(3)
+        tab_set = get_ui_attr(self.ui, "tabWidget_set")
+        if tab_set is not None:
+            safe_call(self.logger, tab_set.setCurrentIndex, 1)
+
     def _on_tab_changed(self, index: int):
         self._nav.on_tab_changed(index)
 

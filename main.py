@@ -18,6 +18,7 @@ sys.path.insert(0, str(project_root))
 # 日志由 main() 内根据 config 统一配置，见 infrastructure.logging_config
 logger = logging.getLogger(__name__)
 
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QGuiApplication
 from ui.core.app_icon import apply_application_icon
@@ -67,10 +68,15 @@ from application import (
 )
 
 # UI
+from infrastructure.config.app_paths import (
+    is_local_device_initialized,
+    mark_local_device_initialized,
+)
 from infrastructure.logging_config import setup_logging
 from ui.core.resource_loader import ensure_resources_loaded
 from ui.core.decoder_log_formatter import summarize_decoder_session_info, log_json
 from ui.dialogs.login import LoginWindow
+from ui.dialogs.tips_dialog import TipsDialog
 from ui.main_window.main_window import MainWindow
 from ui.main_window.sub_window import SubWindow
 
@@ -382,6 +388,27 @@ def create_main_window(
     return main_window
 
 
+_PASSWORD_CHANGE_REMINDER_MSG = "系统默认密码等级过低，建议修改密码！"
+
+
+def _maybe_prompt_password_change(main_window: MainWindow) -> None:
+    """本机首次成功登录后提示改密一次；标记文件存在则跳过。"""
+    if is_local_device_initialized():
+        return
+    try:
+        mark_local_device_initialized()
+    except Exception:
+        logger.exception("写入本机首次登录标记文件失败")
+        return
+    if TipsDialog.show_choice(
+        main_window,
+        _PASSWORD_CHANGE_REMINDER_MSG,
+        confirm_text="修改",
+        cancel_text="取消",
+    ):
+        main_window.open_password_change_page()
+
+
 def run_login_flow(
     apps: AppBundle,
     services: ServiceBundle,
@@ -436,6 +463,7 @@ def run_login_flow(
         main_window.logout_requested.connect(on_logout)
         main_window.showFullScreen()
         set_window_on_screen(main_window, main_screen)
+        QTimer.singleShot(0, lambda: _maybe_prompt_password_change(main_window))
 
     def on_login_cancelled() -> None:
         sys.exit(0)

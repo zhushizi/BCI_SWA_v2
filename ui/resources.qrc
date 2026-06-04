@@ -147,6 +147,7 @@
         <file>pic/icon_start.png</file>
         <file>pic/icon_next.png</file>
         <file>pic/icon_warning.png</file>
+        <file>pic/icon_reset.png</file>
     </qresource>
 
     <qresource prefix="/eval">

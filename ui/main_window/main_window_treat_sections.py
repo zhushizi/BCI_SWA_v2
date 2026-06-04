@@ -159,6 +159,20 @@ _THRESHOLD2_COMPLETE_BTN_STYLE_DISABLED = (
     "    border: none;"
     "}"
 )
+_NEU_RESET_BTN_STYLE = (
+    "QPushButton {"
+    "    background-color: transparent;"
+    "    color: #666666;"
+    "    border: 1px solid #AEB8C5;"
+    "    border-radius: 10px;"
+    "}"
+    "QPushButton:disabled {"
+    "    background-color: transparent;"
+    "    color: #666666;"
+    "    border: 1px solid #C8CCD3;"
+    "    border-radius: 10px;"
+    "}"
+)
 
 _THRESHOLD2_COLUMN_WIDGETS = (
     "label_eval_threshold2_title",
@@ -208,6 +222,8 @@ class TreatNavigation:
         threshold1_begin_btn = get_ui_attr(self.ui, "pushButton_threshold1_begin")
         safe_connect(self._logger, getattr(threshold1_begin_btn, "clicked", None), self.on_threshold1_begin_clicked)
         neu_reset_btn = get_ui_attr(self.ui, "pushButton_neureset")
+        if neu_reset_btn is not None:
+            neu_reset_btn.setStyleSheet(_NEU_RESET_BTN_STYLE)
         safe_connect(self._logger, getattr(neu_reset_btn, "clicked", None), self.on_neu_reset_clicked)
         neu_next_btn = get_ui_attr(self.ui, "pushButton_neunext")
         safe_connect(self._logger, getattr(neu_next_btn, "clicked", None), self.on_neu_next_clicked)
