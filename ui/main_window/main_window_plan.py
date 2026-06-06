@@ -341,10 +341,10 @@ class PlanPageController(BaseTableController):
         else:
             filtered = []
             for plan in self._all_plan_data:
-                pid = str(plan.get("PatientID", "") or "").lower()
                 pname = str(plan.get("PatientName", "") or "").lower()
-                eid = str(plan.get("EvaluationID", "") or "").lower()
-                if keyword in pid or keyword in pname or keyword in eid:
+                threshold1 = str(plan.get("Threshold1", "") or "").lower()
+                threshold2 = str(plan.get("Threshold2", "") or "").lower()
+                if keyword in pname or keyword in threshold1 or keyword in threshold2:
                     filtered.append(plan)
             self._filtered_plans = filtered
         self._refresh_page()

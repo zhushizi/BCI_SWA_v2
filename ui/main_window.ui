@@ -1872,7 +1872,7 @@ QPushButton#pushButton_plan_new:pressed {
         <string/>
        </property>
        <property name="placeholderText">
-        <string>患者姓名/评估编号</string>
+        <string>患者姓名/阈值</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_plan_search_bg">
