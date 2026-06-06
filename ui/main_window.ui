@@ -270,7 +270,7 @@ QTabWidget#tabWidget_main QTabBar::tab {
 }</string>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -353,7 +353,7 @@ QTabWidget#tabWidget QTabBar::tab {
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
@@ -1560,7 +1560,7 @@ QPushButton#pushButton_new:pressed {
         <string notr="true">
 QLabel#label_search_2 {
 	background-color: #DDDDDD;
-	border-radius: 24.37px;
+	border-radius:8px;
 	color: #DDDDDD;
 }</string>
        </property>
@@ -1887,7 +1887,7 @@ QPushButton#pushButton_plan_new:pressed {
        <property name="styleSheet">
         <string notr="true">QLabel#label_plan_search_bg {
 	background-color: #DDDDDD;
-	border-radius: 24.37px;
+	border-radius: 8px;
 	color: #DDDDDD;
 }</string>
        </property>
@@ -1994,6 +1994,8 @@ QTabBar::tab {
     border-radius: 6px;
     background: transparent;
     color: #4A4A4A;
+    font-size: 14px;
+    font-weight: bold;
 }
 QTabBar::tab:selected {
     background: #789EFF;
@@ -2005,7 +2007,7 @@ QTabBar::tab:hover:!selected {
 }</string>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab_set_system">
         <attribute name="title">
