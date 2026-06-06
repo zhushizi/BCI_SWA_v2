@@ -658,6 +658,7 @@ class TreatNavigation:
             # 从电刺激页返回：交给会话守卫弹出“本次治疗未结束”提示
             if not self._host._session_guard.confirm_exit_if_session_active():
                 return
+            self._host.stop_paradigm_service()
             if callable(self._host._on_return_home):
                 self._host._on_return_home()
             self._host.stim_ctrl.on_exit()
@@ -665,6 +666,7 @@ class TreatNavigation:
 
         if not self._host._session_guard.confirm_exit_if_session_active():
             return
+        self._host.stop_paradigm_service()
         if callable(self._host._on_return_home):
             self._host._on_return_home()
         self._host.stim_ctrl.on_exit()

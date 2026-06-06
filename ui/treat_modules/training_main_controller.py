@@ -90,6 +90,7 @@ class TrainingMainController:
         self._pretrain_full_completed = False  # decoder.Inform pretrain=pretrain_full_completed 后为 True
         self._has_sent_paradigm_shut_down = False  # 本 session 是否已发过 main.tigger paradigm.shut_down
         self._on_enter_session_id: Optional[int] = None  # 上次进入训练页时的 session_id，同一 session 内不重置预训练/结束状态
+        self._user_started_training = False  # 用户是否点击过「开始」启动倒计时
         self._init_wave_widget()
         self._init_power_widget()
 
@@ -139,6 +140,12 @@ class TrainingMainController:
             self._on_enter_session_id = current_session_id
             self._pretrain_full_completed = False
             self._has_sent_paradigm_shut_down = False
+            self._user_started_training = False
+        if not self._user_started_training and self._countdown_timer.isActive():
+            self.pause_countdown()
+            self._set_start_stop_to_start_state()
+        elif not self._user_started_training:
+            self._set_start_stop_to_start_state()
         self._refresh_info_panel()
 
     def set_pretrain_full_completed(self) -> None:
@@ -350,6 +357,7 @@ class TrainingMainController:
             self._countdown_timer.stop()
         self._countdown_remaining = 0
         self._countdown_total = 0
+        self._user_started_training = False
         self._reset_trial_and_countdown_labels()
 
     def _reset_trial_and_countdown_labels(self) -> None:
@@ -374,6 +382,7 @@ class TrainingMainController:
 
     def _set_start_stop_to_start_state(self) -> None:
         """将开始/暂停按钮设为「开始」状态（倒计时完成或停止时）。"""
+        self._user_started_training = False
         self._apply_start_stop_visual(running=False)
 
     def _apply_start_stop_visual(self, running: bool) -> None:
@@ -442,18 +451,13 @@ class TrainingMainController:
 
     def is_paused_state(self) -> bool:
         """
-        判断训练是否处于暂停/未开始状态。
-        - 计时器仍在运行视为未暂停
-        - 按钮文本含有“暂停”视为正在运行（需要先暂停）
+        判断训练是否处于可离开状态。
+        仅当用户已点击「开始」且倒计时仍在运行时才需要先暂停。
+        范式（如 SSMVEP）自动启动预训练时，若用户未点开始，允许直接返回。
         """
-        if self._countdown_timer.isActive():
-            return False
-        start_stop_btn = get_ui_attr(self.ui, "pushButton_start_stop")
-        if start_stop_btn:
-            text = start_stop_btn.text() or ""
-            if "暂停" in text:
-                return False
-        return True
+        if not self._user_started_training:
+            return True
+        return not self._countdown_timer.isActive()
 
     def _on_start_stop_clicked(self) -> None:
         """开始/暂停按钮直接控制倒计时：点击开始 -> 开始计时；点击暂停 -> 暂停计时。不再依赖 paradigm.start_decoding / paradigm.Stage。"""
@@ -472,6 +476,7 @@ class TrainingMainController:
             if self.training_flow_app:
                 self.training_flow_app.notify_pause()
         else:
+            self._user_started_training = True
             self._apply_start_stop_visual(running=True)
             self.start_countdown()
             if self.training_flow_app:

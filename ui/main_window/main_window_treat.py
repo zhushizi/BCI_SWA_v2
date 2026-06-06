@@ -126,24 +126,37 @@ class TreatPageController:
         self.training_main_ctrl.set_current_patient(pid)
         self.training_sub_ctrl.set_current_patient(pid)
 
+    def stop_paradigm_service(self, notify_shutdown: bool = True) -> None:
+        """通知范式退出并终止独立 exe 进程。"""
+        if notify_shutdown:
+            training_flow_app = getattr(self.training_main_ctrl, "training_flow_app", None)
+            if training_flow_app is not None:
+                try:
+                    training_flow_app.notify_shut_down()
+                except Exception:
+                    self._logger.exception("发送 paradigm.shut_down 失败")
+        self.training_sub_ctrl.stop_paradigm_service()
+
     def _on_countdown_finished_return_home(self) -> None:
         """倒计时结束时用户选择「是」：返回主页面。"""
+        self.stop_paradigm_service(notify_shutdown=False)
         self.stim_ctrl.on_exit()
         if callable(self._on_return_home):
             self._on_return_home()
 
     def _on_shut_down_return_home(self) -> None:
         """训练页点击结束返回主页面前，先发送停止命令。"""
+        self.stop_paradigm_service(notify_shutdown=False)
         self.stim_ctrl.on_exit()
         if callable(self._on_return_home):
             self._on_return_home()
 
     def on_exit_treat_page(self) -> None:
         """离开治疗页时调用：停止治疗并保存当前档位（模块各自处理）。"""
+        self.stop_paradigm_service()
         self.stim_ctrl.on_exit()
         self.impedance_ctrl.on_exit()
         self.training_main_ctrl.on_exit()
-        # 副屏不一定要退出；这里只保留占位
 
     # ---------- 内部事件（导航/编排） ----------
     def _on_preprocess_next(self) -> None:
@@ -177,6 +190,7 @@ class TreatPageController:
         """预留：治疗时间到达后结束会话并回主页面。"""
         if self.session_app and self.session_app.has_active_session():
             self.session_app.end_session("time_up")
+        self.stop_paradigm_service()
         if callable(self._on_return_home):
             self._on_return_home()
         self.stim_ctrl.on_exit()

@@ -98,3 +98,19 @@ class TrainingSubController:
             self._logger.error("启动范式程序失败: %s", exc)
             return False
 
+    def stop_paradigm_service(self) -> None:
+        """终止已启动的范式独立进程，并切回副屏欢迎页。"""
+        proc = self._paradigm_process
+        self._paradigm_process = None
+        if proc is not None and proc.poll() is None:
+            try:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait(timeout=2)
+            except Exception as exc:
+                self._logger.warning("终止范式进程失败: %s", exc)
+        self.show_welcome_tab()
+
