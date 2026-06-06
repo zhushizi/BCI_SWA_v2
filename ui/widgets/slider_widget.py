@@ -44,6 +44,10 @@ class SliderWidget(QWidget):
         self._pill_handle_radius = 15.0
         self._pill_track_idle = QColor(233, 237, 245)
         self._pill_track_active = QColor(0x78, 0x9E, 0xFF)  # #789EFF
+        self._pill_track_border = QColor(208, 214, 224)
+        self._pill_track_shadow = QColor(0, 0, 0, 28)
+        self._pill_handle_border = QColor(216, 222, 232)
+        self._pill_handle_shadow = QColor(0, 0, 0, 50)
         self._pill_tick_idle = QColor(196, 202, 214)
         self._pill_tick_active = QColor(255, 255, 255)
         self._apply_active_palette()
@@ -224,17 +228,56 @@ class SliderWidget(QWidget):
         value = self._min_value + t * (self._max_value - self._min_value)
         return int(round(value))
 
+    def _draw_pill_track(self, painter: QPainter, track_rect: QRectF, radius: float) -> QPainterPath:
+        path_track = QPainterPath()
+        path_track.addRoundedRect(track_rect, radius, radius)
+
+        if self.isEnabled():
+            shadow_path = QPainterPath()
+            shadow_rect = track_rect.adjusted(0.0, 1.0, 0.0, 2.0)
+            shadow_path.addRoundedRect(shadow_rect, radius, radius)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(self._pill_track_shadow)
+            painter.drawPath(shadow_path)
+
+        border_color = self._pill_track_border if self.isEnabled() else self._track_border_color
+        fill_color = self._pill_track_idle if self.isEnabled() else self._track_base_color
+        painter.setPen(QPen(border_color, 1))
+        painter.setBrush(fill_color)
+        painter.drawPath(path_track)
+        return path_track
+
+    def _draw_pill_handle(self, painter: QPainter, handle_center: QPointF, hr: float) -> None:
+        shadow_dx = 1.0 if self._is_horizontal() else 0.0
+        shadow_dy = 0.0 if self._is_horizontal() else 1.5
+        shadow_rect = QRectF(
+            handle_center.x() - hr + shadow_dx,
+            handle_center.y() - hr + shadow_dy,
+            hr * 2.0,
+            hr * 2.0,
+        )
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self._pill_handle_shadow if self.isEnabled() else QColor(0, 0, 0, 25))
+        painter.drawEllipse(shadow_rect)
+
+        handle_rect = QRectF(
+            handle_center.x() - hr,
+            handle_center.y() - hr,
+            hr * 2.0,
+            hr * 2.0,
+        )
+        border_color = self._pill_handle_border if self.isEnabled() else self._track_border_color
+        fill_color = QColor(255, 255, 255) if self.isEnabled() else self._handle_inner_color
+        painter.setPen(QPen(border_color, 1))
+        painter.setBrush(fill_color)
+        painter.drawEllipse(handle_rect)
+
     def _paint_vertical_pill(self, painter: QPainter) -> None:
         track_rect, radius, _ = self._track_geometry()
         handle_center = self._handle_center()
         hr = self._handle_radius()
 
-        path_track = QPainterPath()
-        path_track.addRoundedRect(track_rect, radius, radius)
-
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(self._pill_track_idle if self.isEnabled() else self._track_base_color)
-        painter.drawPath(path_track)
+        path_track = self._draw_pill_track(painter, track_rect, radius)
 
         fill_top = track_rect.top()
         fill_h = max(0.0, handle_center.y() - fill_top)
@@ -259,35 +302,14 @@ class SliderWidget(QWidget):
                 painter.setBrush(color)
                 painter.drawEllipse(QPointF(cx, y), dot_r, dot_r)
 
-        shadow_rect = QRectF(
-            handle_center.x() - hr,
-            handle_center.y() - hr + 1.0,
-            hr * 2.0,
-            hr * 2.0,
-        )
-        painter.setBrush(QColor(0, 0, 0, 35))
-        painter.drawEllipse(shadow_rect)
-
-        handle_rect = QRectF(
-            handle_center.x() - hr,
-            handle_center.y() - hr,
-            hr * 2.0,
-            hr * 2.0,
-        )
-        painter.setBrush(QColor(255, 255, 255) if self.isEnabled() else self._handle_inner_color)
-        painter.drawEllipse(handle_rect)
+        self._draw_pill_handle(painter, handle_center, hr)
 
     def _paint_horizontal_pill(self, painter: QPainter) -> None:
         track_rect, radius, _ = self._track_geometry()
         handle_center = self._handle_center()
         hr = self._handle_radius()
 
-        path_track = QPainterPath()
-        path_track.addRoundedRect(track_rect, radius, radius)
-
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(self._pill_track_idle if self.isEnabled() else self._track_base_color)
-        painter.drawPath(path_track)
+        path_track = self._draw_pill_track(painter, track_rect, radius)
 
         fill_left = track_rect.left()
         fill_w = max(0.0, handle_center.x() - fill_left)
@@ -312,23 +334,7 @@ class SliderWidget(QWidget):
                 painter.setBrush(color)
                 painter.drawEllipse(QPointF(x, cy), dot_r, dot_r)
 
-        shadow_rect = QRectF(
-            handle_center.x() - hr + 1.0,
-            handle_center.y() - hr,
-            hr * 2.0,
-            hr * 2.0,
-        )
-        painter.setBrush(QColor(0, 0, 0, 35))
-        painter.drawEllipse(shadow_rect)
-
-        handle_rect = QRectF(
-            handle_center.x() - hr,
-            handle_center.y() - hr,
-            hr * 2.0,
-            hr * 2.0,
-        )
-        painter.setBrush(QColor(255, 255, 255) if self.isEnabled() else self._handle_inner_color)
-        painter.drawEllipse(handle_rect)
+        self._draw_pill_handle(painter, handle_center, hr)
 
     def _paint_default(self, painter: QPainter) -> None:
         track_rect, radius, _ = self._track_geometry()
