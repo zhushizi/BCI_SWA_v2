@@ -148,6 +148,9 @@
         <file>pic/icon_next.png</file>
         <file>pic/icon_warning.png</file>
         <file>pic/icon_reset.png</file>
+        <file>pic/icon_elec_hui.png</file>
+        <file>pic/icon_elec_lan.png</file>
+        <file>pic/icon_elec_huang.png</file>
     </qresource>
 
     <qresource prefix="/eval">

@@ -34,6 +34,16 @@ _START_TEST_BTN_STYLE_RUNNING = (
     "QPushButton:disabled { background-color: #707070; color: rgba(255, 255, 255, 1); border-radius: 8px; }"
 )
 
+_ELEC_STATUS_IDLE_TEXT = "未运行"
+_ELEC_STATUS_IDLE_STYLE = "color: #999999;"
+_ELEC_STATUS_IDLE_ICON = "border-image: url(:/set/pic/icon_elec_hui.png);"
+_ELEC_STATUS_RUNNING_TEXT = "运行中"
+_ELEC_STATUS_RUNNING_STYLE = "color: #789EFF;"
+_ELEC_STATUS_RUNNING_ICON = "border-image: url(:/set/pic/icon_elec_lan.png);"
+_ELEC_STATUS_STIM_TEXT = "刺激中"
+_ELEC_STATUS_STIM_STYLE = "color: #F2AD49;"
+_ELEC_STATUS_STIM_ICON = "border-image: url(:/set/pic/icon_elec_huang.png);"
+
 
 class _StimSerialAckBridge(QObject):
     """串口接收线程 -> Qt 主线程：应答后启停定时器/改 UI 须经此转发。"""
@@ -446,6 +456,8 @@ class StimTestController:
             style = _START_TEST_BTN_STYLE_RUNNING if self._test_running else _START_TEST_BTN_STYLE_IDLE
             safe_call(self._logger, getattr(start_btn, "setStyleSheet", None), style)
 
+        self._update_elec_status_display()
+
         # 左右通道档位调节按钮：在线即可点，未开始测试时点击会弹提示
         for btn_name in (
             "pushButton_left_turnbig",
@@ -606,6 +618,7 @@ class StimTestController:
         safe_call(self._logger, getattr(label, "setText", None), f"{grade}级")
         if self._left_circle_widget is not None:
             self._left_circle_widget.set_level(grade)
+        self._update_elec_status_display()
 
     def _get_right_grade(self) -> int:
         if self._right_circle_widget is not None:
@@ -627,6 +640,40 @@ class StimTestController:
             safe_call(self._logger, getattr(label, "setText", None), f"{grade}级")
         if self._right_circle_widget is not None:
             self._right_circle_widget.set_level(grade)
+        self._update_elec_status_display()
+
+    def _has_active_stim_grade(self) -> bool:
+        left = self._get_left_grade() if self._is_left_channel_ui_available() else 0
+        right = self._get_right_grade()
+        return int(left) > 0 or int(right) > 0
+
+    def _update_elec_status_display(self) -> None:
+        """label_elec_status / label_elec_icon：未运行 / 运行中 / 刺激中。"""
+        status_label = get_ui_attr(self.ui, "label_elec_status")
+        icon_label = get_ui_attr(self.ui, "label_elec_icon")
+        if not self._test_running:
+            text, style, icon = (
+                _ELEC_STATUS_IDLE_TEXT,
+                _ELEC_STATUS_IDLE_STYLE,
+                _ELEC_STATUS_IDLE_ICON,
+            )
+        elif self._has_active_stim_grade():
+            text, style, icon = (
+                _ELEC_STATUS_STIM_TEXT,
+                _ELEC_STATUS_STIM_STYLE,
+                _ELEC_STATUS_STIM_ICON,
+            )
+        else:
+            text, style, icon = (
+                _ELEC_STATUS_RUNNING_TEXT,
+                _ELEC_STATUS_RUNNING_STYLE,
+                _ELEC_STATUS_RUNNING_ICON,
+            )
+        if status_label is not None:
+            safe_call(self._logger, getattr(status_label, "setText", None), text)
+            safe_call(self._logger, getattr(status_label, "setStyleSheet", None), style)
+        if icon_label is not None:
+            safe_call(self._logger, getattr(icon_label, "setStyleSheet", None), icon)
 
     def _send_left_channel_params(self, current_value: int) -> None:
         if not self._is_left_channel_ui_available():
