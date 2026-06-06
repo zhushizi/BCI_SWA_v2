@@ -145,10 +145,22 @@
     </size>
    </property>
    <property name="styleSheet">
-    <string notr="true">border-image: url(:/main/pic/main_pingpong_on.png);</string>
+    <string notr="true">QLabel#label_pingpong {
+ background: transparent;
+ border: none;
+ border-image: url(:/main/pic/main_pingpong_on.png);
+}
+QLabel#label_pingpong:hover {
+ background: transparent;
+ border: none;
+ border-image: url(:/main/pic/main_pingpong_on.png);
+}</string>
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QLabel" name="label_wifi">
@@ -173,10 +185,22 @@
     </size>
    </property>
    <property name="styleSheet">
-    <string notr="true">border-image: url(:/main/pic/main_wifi_on.png);</string>
+    <string notr="true">QLabel#label_wifi {
+ background: transparent;
+ border: none;
+ border-image: url(:/main/pic/main_wifi_on.png);
+}
+QLabel#label_wifi:hover {
+ background: transparent;
+ border: none;
+ border-image: url(:/main/pic/main_wifi_on.png);
+}</string>
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_quit">

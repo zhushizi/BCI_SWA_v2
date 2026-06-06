@@ -323,6 +323,28 @@ class MainWindowUserInfo:
         self._save_org_info("", "")
 
 
+def _status_indicator_stylesheet(object_name: str, icon_url: str) -> str:
+    """状态图标样式：悬浮时保持透明背景，不继承父级底色。"""
+    return (
+        f"QLabel#{object_name} {{"
+        f" background: transparent;"
+        f" border: none;"
+        f" border-image: url({icon_url});"
+        f"}}"
+        f"QLabel#{object_name}:hover {{"
+        f" background: transparent;"
+        f" border: none;"
+        f" border-image: url({icon_url});"
+        f"}}"
+    )
+
+
+def _configure_status_indicator_label(label) -> None:
+    if label is None:
+        return
+    label.setAutoFillBackground(False)
+
+
 class MainWindowDeviceStatus:
     def __init__(self, host):
         self._host = host
@@ -332,10 +354,12 @@ class MainWindowDeviceStatus:
     def init_device_status(self) -> None:
         label_pingpong = get_ui_attr(self.ui, "label_pingpong")
         if label_pingpong:
+            _configure_status_indicator_label(label_pingpong)
             label_pingpong.setText("")
             self.set_pingpong_indicator(is_alive=False)
             self.update_treat_controls_by_pingpong()
         label_wifi = get_ui_attr(self.ui, "label_wifi")
+        _configure_status_indicator_label(label_wifi)
         safe_call(self._host.logger, getattr(label_wifi, "setText", None), "")
         self._init_ws_status()
 
@@ -364,11 +388,15 @@ class MainWindowDeviceStatus:
         if label_pingpong is None:
             return
         if is_alive:
-            label_pingpong.setStyleSheet("border-image: url(:/main/pic/main_pingpong_on.png);")
-            label_pingpong.setToolTip("心跳正常")
+            label_pingpong.setStyleSheet(
+                _status_indicator_stylesheet("label_pingpong", ":/main/pic/main_pingpong_on.png")
+            )
+            label_pingpong.setToolTip("下位机通讯正常")
         else:
-            label_pingpong.setStyleSheet("border-image: url(:/main/pic/main_pingpong_off.png);")
-            label_pingpong.setToolTip("心跳超时")
+            label_pingpong.setStyleSheet(
+                _status_indicator_stylesheet("label_pingpong", ":/main/pic/main_pingpong_off.png")
+            )
+            label_pingpong.setToolTip("下位机通讯异常")
 
     def _init_ws_status(self) -> None:
         self._set_wifi_indicator(False)
@@ -395,11 +423,15 @@ class MainWindowDeviceStatus:
         if label_wifi is None:
             return
         if is_connected:
-            label_wifi.setStyleSheet("border-image: url(:/main/pic/main_wifi_on.png);")
-            label_wifi.setToolTip("服务器连接正常")
+            label_wifi.setStyleSheet(
+                _status_indicator_stylesheet("label_wifi", ":/main/pic/main_wifi_on.png")
+            )
+            label_wifi.setToolTip("上位机通讯正常")
         else:
-            label_wifi.setStyleSheet("border-image: url(:/main/pic/main_wifi_off.png);")
-            label_wifi.setToolTip("服务器未连接")
+            label_wifi.setStyleSheet(
+                _status_indicator_stylesheet("label_wifi", ":/main/pic/main_wifi_off.png")
+            )
+            label_wifi.setToolTip("上位机通讯异常")
 
     def on_pingpong_status_changed(self, is_alive: bool, last_seen_sec) -> None:
         self.set_pingpong_indicator(bool(is_alive))
@@ -410,7 +442,7 @@ class MainWindowDeviceStatus:
         if label_pingpong is None:
             return True
         try:
-            return label_pingpong.toolTip() == "心跳正常"
+            return label_pingpong.toolTip() == "下位机通讯正常"
         except Exception:
             return True
 
