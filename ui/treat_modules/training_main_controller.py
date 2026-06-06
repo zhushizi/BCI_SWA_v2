@@ -15,15 +15,25 @@ from ui.dialogs.tips_dialog import TipsDialog
 from PySide6.QtGui import QImage, QPainter, QPen, QColor, QFont, QFontMetrics
 from PySide6.QtCore import QTimer, Qt, QObject, QEvent, QRect, QBuffer
 
+_TRAIN_BTN_DISABLED_SUFFIX = (
+    "QPushButton:disabled { background-color: #B0B0B0; color: #E8E8E8; border: none; border-radius: 8px; }"
+)
+_TRAIN_SHUTDOWN_BTN_DISABLED_SUFFIX = (
+    "QPushButton:disabled { background-color: #E8E8E8; color: #B0B0B0; border: 1px solid #C8C8C8; border-radius: 8px; }"
+)
 _TRAIN_START_STOP_BTN_STYLE = (
     "QPushButton { background-color: #789EFF; color: #FFFFFF; border: none; border-radius: 8px; }"
+    + _TRAIN_BTN_DISABLED_SUFFIX
 )
 _TRAIN_START_STOP_BTN_STYLE_RUNNING = (
     "QPushButton { background-color: #F2AD49; color: #FFFFFF; border: none; border-radius: 8px; }"
+    + _TRAIN_BTN_DISABLED_SUFFIX
 )
 _TRAIN_SHUTDOWN_BTN_STYLE = (
     "QPushButton { background-color: #FFFFFF; color: #FF7B71; border: 1px solid #FF7B71; border-radius: 8px; }"
+    + _TRAIN_SHUTDOWN_BTN_DISABLED_SUFFIX
 )
+_TRAIN_ENTRY_BUTTON_LOCK_MS = 2000
 _TRAIN_START_ICON_STYLE = "border-image: url(:/set/pic/icon_start.png);"
 _TRAIN_PAUSE_ICON_STYLE = "border-image: url(:/set/pic/icon_zanting_paradigm.png);"
 _TRAIN_SHUT_ICON_STYLE = "border-image: url(:/set/pic/icon_shut_paradigm.png);"
@@ -91,6 +101,9 @@ class TrainingMainController:
         self._has_sent_paradigm_shut_down = False  # 本 session 是否已发过 main.tigger paradigm.shut_down
         self._on_enter_session_id: Optional[int] = None  # 上次进入训练页时的 session_id，同一 session 内不重置预训练/结束状态
         self._user_started_training = False  # 用户是否点击过「开始」启动倒计时
+        self._entry_lock_timer = QTimer()
+        self._entry_lock_timer.setSingleShot(True)
+        self._entry_lock_timer.timeout.connect(self._release_entry_button_lock)
         self._init_wave_widget()
         self._init_power_widget()
 
@@ -147,6 +160,7 @@ class TrainingMainController:
         elif not self._user_started_training:
             self._set_start_stop_to_start_state()
         self._refresh_info_panel()
+        self._start_entry_button_lock()
 
     def set_pretrain_full_completed(self) -> None:
         """收到 decoder.Inform pretrain=pretrain_full_completed 时调用（SSMVEP/MI 可暂停）。"""
@@ -158,8 +172,33 @@ class TrainingMainController:
         self._reaction_curve_points = []
         self._reaction_time_points = []
         self._last_session_id = None
+        self._entry_lock_timer.stop()
+        self._release_entry_button_lock()
         self.stop_countdown()
         return
+
+    def _start_entry_button_lock(self) -> None:
+        """进入训练页后短暂禁用开始/结束按钮，等待范式就绪。"""
+        self._entry_lock_timer.stop()
+        start_stop_btn = get_ui_attr(self.ui, "pushButton_start_stop")
+        shut_down_btn = get_ui_attr(self.ui, "pushButton_paradigm_shut_down")
+        if start_stop_btn is not None:
+            safe_call(self._logger, getattr(start_stop_btn, "setEnabled", None), False)
+        if shut_down_btn is not None:
+            safe_call(self._logger, getattr(shut_down_btn, "setEnabled", None), False)
+        self._entry_lock_timer.start(_TRAIN_ENTRY_BUTTON_LOCK_MS)
+
+    def _release_entry_button_lock(self) -> None:
+        """解除进入训练页时的按钮禁用。"""
+        shut_down_btn = get_ui_attr(self.ui, "pushButton_paradigm_shut_down")
+        if shut_down_btn is not None:
+            safe_call(self._logger, getattr(shut_down_btn, "setEnabled", None), True)
+            safe_call(self._logger, getattr(shut_down_btn, "setStyleSheet", None), _TRAIN_SHUTDOWN_BTN_STYLE)
+        start_stop_btn = get_ui_attr(self.ui, "pushButton_start_stop")
+        if start_stop_btn is not None:
+            safe_call(self._logger, getattr(start_stop_btn, "setEnabled", None), True)
+            running = bool(self._user_started_training and self._countdown_timer.isActive())
+            self._apply_start_stop_visual(running=running)
 
     def _refresh_info_panel(self) -> None:
         patient = None
