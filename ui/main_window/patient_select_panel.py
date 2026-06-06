@@ -139,7 +139,7 @@ class PatientSelectPanel(QWidget):
     patient_selected = Signal(dict)
     PAGE_SIZE = 10
     CARD_HEIGHT = 68
-    CARD_SPACING = 4
+    CARD_SPACING = 8
 
     def __init__(self, patient_app=None, parent: Optional[QWidget] = None, logger: Optional[logging.Logger] = None) -> None:
         super().__init__(parent)
@@ -198,7 +198,7 @@ class PatientSelectPanel(QWidget):
         root_layout = QVBoxLayout(self)
         # 给圆角容器预留内边距，避免列表卡片在底部被视觉裁切
         root_layout.setContentsMargins(6, 10, 6, 10)
-        root_layout.setSpacing(6)
+        root_layout.setSpacing(24)
 
         search_wrap = QFrame()
         search_wrap.setObjectName("searchWrap")

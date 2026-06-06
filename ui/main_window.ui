@@ -353,7 +353,7 @@ QTabWidget#tabWidget QTabBar::tab {
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>4</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
@@ -689,7 +689,7 @@ border-radius: 8px;</string>
          <x>10</x>
          <y>70</y>
          <width>301</width>
-         <height>841</height>
+         <height>861</height>
         </rect>
        </property>
        <property name="styleSheet">
@@ -2994,20 +2994,20 @@ border-color: #C7D2FE;
       <widget class="QWidget" name="widget_patients_record" native="true">
        <property name="geometry">
         <rect>
-         <x>60</x>
-         <y>60</y>
-         <width>411</width>
-         <height>851</height>
+         <x>50</x>
+         <y>40</y>
+         <width>431</width>
+         <height>891</height>
         </rect>
        </property>
       </widget>
       <widget class="QWidget" name="widget_patient_treat_record" native="true">
        <property name="geometry">
         <rect>
-         <x>560</x>
-         <y>60</y>
-         <width>1161</width>
-         <height>851</height>
+         <x>550</x>
+         <y>40</y>
+         <width>1201</width>
+         <height>891</height>
         </rect>
        </property>
       </widget>
