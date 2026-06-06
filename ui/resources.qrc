@@ -153,6 +153,8 @@
         <file>pic/icon_elec_huang.png</file>
         <file>pic/icon_shut_paradigm.png</file>
         <file>pic/icon_zanting_paradigm.png</file>
+        <file>pic/icon_dialog_gantan.png</file>
+        <file>pic/icon_dialog_chengong.png</file>
         
     </qresource>
 
