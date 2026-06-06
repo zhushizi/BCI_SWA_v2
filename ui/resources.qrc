@@ -151,6 +151,9 @@
         <file>pic/icon_elec_hui.png</file>
         <file>pic/icon_elec_lan.png</file>
         <file>pic/icon_elec_huang.png</file>
+        <file>pic/icon_shut_paradigm.png</file>
+        <file>pic/icon_zanting_paradigm.png</file>
+        
     </qresource>
 
     <qresource prefix="/eval">

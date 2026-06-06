@@ -15,6 +15,27 @@ from ui.dialogs.tips_dialog import TipsDialog
 from PySide6.QtGui import QImage, QPainter, QPen, QColor, QFont, QFontMetrics
 from PySide6.QtCore import QTimer, Qt, QObject, QEvent, QRect, QBuffer
 
+_TRAIN_START_STOP_BTN_STYLE = (
+    "QPushButton { background-color: #789EFF; color: #FFFFFF; border: none; border-radius: 8px; }"
+)
+_TRAIN_START_STOP_BTN_STYLE_RUNNING = (
+    "QPushButton { background-color: #F2AD49; color: #FFFFFF; border: none; border-radius: 8px; }"
+)
+_TRAIN_SHUTDOWN_BTN_STYLE = (
+    "QPushButton { background-color: #FFFFFF; color: #FF7B71; border: 1px solid #FF7B71; border-radius: 8px; }"
+)
+_TRAIN_START_ICON_STYLE = "border-image: url(:/set/pic/icon_start.png);"
+_TRAIN_PAUSE_ICON_STYLE = "border-image: url(:/set/pic/icon_zanting_paradigm.png);"
+_TRAIN_SHUT_ICON_STYLE = "border-image: url(:/set/pic/icon_shut_paradigm.png);"
+_TRAIN_START_ICON_SIZE = (14, 16)
+_TRAIN_PAUSE_ICON_SIZE = (11, 16)
+_TRAIN_SHUT_ICON_SIZE = (18, 18)
+# 与 main_window.ui pushButton_start_stop 一致（前导空格为 label_64 图标留位）
+_TRAIN_START_STOP_BTN_TEXT_IDLE = "      开始"
+_TRAIN_START_STOP_BTN_TEXT_RUNNING = "      暂停"
+_TRAIN_START_ICON_X = 1105
+_TRAIN_START_ICON_Y = 847
+
 
 class TrainingMainController:
     """
@@ -75,10 +96,19 @@ class TrainingMainController:
     def bind_signals(self) -> None:
         start_stop_btn = get_ui_attr(self.ui, "pushButton_start_stop")
         if start_stop_btn:
+            start_stop_btn.setStyleSheet(_TRAIN_START_STOP_BTN_STYLE)
+            safe_call(
+                self._logger,
+                getattr(start_stop_btn, "setText", None),
+                _TRAIN_START_STOP_BTN_TEXT_IDLE,
+            )
             safe_connect(self._logger, getattr(start_stop_btn, "clicked", None), self._on_start_stop_clicked)
+        self._update_start_stop_icon(running=False)
         shut_down_btn = get_ui_attr(self.ui, "pushButton_paradigm_shut_down")
         if shut_down_btn:
+            shut_down_btn.setStyleSheet(_TRAIN_SHUTDOWN_BTN_STYLE)
             safe_connect(self._logger, getattr(shut_down_btn, "clicked", None), self._on_paradigm_shut_down_clicked)
+        self._ensure_train_button_icons()
 
     def set_current_patient(self, patient_id: Optional[str]) -> None:
         self._current_patient_id = str(patient_id or "").strip() or None
@@ -200,6 +230,7 @@ class TrainingMainController:
             QRect(panel_x, host_geo.y(), panel_width, host_geo.height())
         )
         self._wave_label_panel.raise_()
+        self._ensure_train_button_icons()
         if len(self._wave_label_items) != len(labels):
             for text_item, dot_item in self._wave_label_items:
                 text_item.deleteLater()
@@ -343,10 +374,54 @@ class TrainingMainController:
 
     def _set_start_stop_to_start_state(self) -> None:
         """将开始/暂停按钮设为「开始」状态（倒计时完成或停止时）。"""
+        self._apply_start_stop_visual(running=False)
+
+    def _apply_start_stop_visual(self, running: bool) -> None:
+        """开始/暂停按钮与 label_64 联动：运行中底色 #F2AD49 + 暂停图标。"""
         start_stop_btn = get_ui_attr(self.ui, "pushButton_start_stop")
-        if start_stop_btn:
-            start_stop_btn.setStyleSheet("border-image: url(:/treat/pic/treat_start.png); color: #ffffff;")
-            start_stop_btn.setText("          开始")
+        if start_stop_btn is not None:
+            style = _TRAIN_START_STOP_BTN_STYLE_RUNNING if running else _TRAIN_START_STOP_BTN_STYLE
+            safe_call(self._logger, getattr(start_stop_btn, "setStyleSheet", None), style)
+            safe_call(
+                self._logger,
+                getattr(start_stop_btn, "setText", None),
+                _TRAIN_START_STOP_BTN_TEXT_RUNNING if running else _TRAIN_START_STOP_BTN_TEXT_IDLE,
+            )
+        self._update_start_stop_icon(running=running)
+
+    def _ensure_train_button_icons(self) -> None:
+        """label_64/65 叠在按钮之上，避免被按钮或波形标签面板遮挡。"""
+        shut_icon = get_ui_attr(self.ui, "label_65")
+        if shut_icon is not None:
+            w, h = _TRAIN_SHUT_ICON_SIZE
+            safe_call(self._logger, getattr(shut_icon, "setMinimumSize", None), w, h)
+            safe_call(self._logger, getattr(shut_icon, "setMaximumSize", None), w, h)
+            safe_call(self._logger, getattr(shut_icon, "setFixedSize", None), w, h)
+            safe_call(self._logger, getattr(shut_icon, "setStyleSheet", None), _TRAIN_SHUT_ICON_STYLE)
+            shut_icon.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+            shut_icon.raise_()
+        start_icon = get_ui_attr(self.ui, "label_64")
+        if start_icon is not None:
+            start_icon.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+            start_icon.raise_()
+
+    def _update_start_stop_icon(self, running: bool) -> None:
+        """label_64：开始态 icon_start；训练运行中（按钮「暂停」）用 icon_zanting_paradigm 11×16。"""
+        icon_label = get_ui_attr(self.ui, "label_64")
+        if icon_label is None:
+            return
+        if running:
+            w, h = _TRAIN_PAUSE_ICON_SIZE
+            icon_x = _TRAIN_START_ICON_X + (_TRAIN_START_ICON_SIZE[0] - w)
+        else:
+            w, h = _TRAIN_START_ICON_SIZE
+            icon_x = _TRAIN_START_ICON_X
+        safe_call(self._logger, getattr(icon_label, "setMinimumSize", None), w, h)
+        safe_call(self._logger, getattr(icon_label, "setMaximumSize", None), w, h)
+        safe_call(self._logger, getattr(icon_label, "setFixedSize", None), w, h)
+        safe_call(self._logger, getattr(icon_label, "move", None), icon_x, _TRAIN_START_ICON_Y)
+        style = _TRAIN_PAUSE_ICON_STYLE if running else _TRAIN_START_ICON_STYLE
+        safe_call(self._logger, getattr(icon_label, "setStyleSheet", None), style)
 
     def _show_countdown_finished_dialog(self) -> None:
         """倒计时结束时弹窗（tips.ui）：本次训练结束，是否返回主页面。确定：返回主页面，否：留在当前页。"""
@@ -393,13 +468,11 @@ class TrainingMainController:
                     TipsDialog.show_tips(self.ui, message or "预训练未完成无法暂停")
                     return
             self.pause_countdown()
-            start_stop_btn.setStyleSheet("border-image: url(:/treat/pic/treat_start.png); color: #ffffff;")
-            start_stop_btn.setText("          开始")
+            self._apply_start_stop_visual(running=False)
             if self.training_flow_app:
                 self.training_flow_app.notify_pause()
         else:
-            start_stop_btn.setStyleSheet("border-image: url(:/treat/pic/treat_pause.png); color: #ffffff;")
-            start_stop_btn.setText("          暂停")
+            self._apply_start_stop_visual(running=True)
             self.start_countdown()
             if self.training_flow_app:
                 self.training_flow_app.notify_start()

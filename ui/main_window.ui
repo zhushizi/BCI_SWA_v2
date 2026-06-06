@@ -3325,7 +3325,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       </size>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
@@ -5005,7 +5005,7 @@ border: none;
 border-radius: 8px;</string>
        </property>
        <property name="text">
-        <string>开始评估</string>
+        <string>    开始评估</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_Electrode_P7">
@@ -8550,6 +8550,62 @@ padding: 0px;</string>
         <string/>
        </property>
       </widget>
+      <widget class="QLabel" name="label_62">
+       <property name="geometry">
+        <rect>
+         <x>650</x>
+         <y>760</y>
+         <width>14</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-image: url(:/set/pic/icon_start.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_63">
+       <property name="geometry">
+        <rect>
+         <x>912</x>
+         <y>803</y>
+         <width>14</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-image: url(:/set/pic/icon_start.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
       <zorder>label_21</zorder>
       <zorder>label_19</zorder>
       <zorder>label_18</zorder>
@@ -8640,6 +8696,8 @@ padding: 0px;</string>
       <zorder>label_Electrode_PO8</zorder>
       <zorder>label_Electrode_PO2</zorder>
       <zorder>label_Electrode_PO4</zorder>
+      <zorder>label_62</zorder>
+      <zorder>label_63</zorder>
      </widget>
      <widget class="QWidget" name="tab_5">
       <attribute name="title">
@@ -9211,32 +9269,32 @@ padding: 0px;</string>
         <rect>
          <x>1070</x>
          <y>830</y>
-         <width>180</width>
+         <width>141</width>
          <height>50</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>180</width>
+         <width>141</width>
          <height>50</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>180</width>
+         <width>141</width>
          <height>50</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>16</pointsize>
+         <pointsize>14</pointsize>
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">border-image: url(:/treat/pic/treat_start.png);color: #ffffff;</string>
+        <string notr="true">QPushButton { background-color: #789EFF; color: #FFFFFF; border: none; border-radius: 8px; }</string>
        </property>
        <property name="text">
-        <string>          开始</string>
+        <string>      开始</string>
        </property>
       </widget>
       <widget class="QPushButton" name="pushButton_paradigm_shut_down">
@@ -9244,32 +9302,32 @@ padding: 0px;</string>
         <rect>
          <x>1280</x>
          <y>830</y>
-         <width>180</width>
+         <width>141</width>
          <height>50</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
-         <width>180</width>
+         <width>141</width>
          <height>50</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>180</width>
+         <width>141</width>
          <height>50</height>
         </size>
        </property>
        <property name="font">
         <font>
-         <pointsize>16</pointsize>
+         <pointsize>14</pointsize>
         </font>
        </property>
        <property name="styleSheet">
-        <string notr="true">border-image: url(:/treat/pic/treat_shut.png); color: #ffffff;</string>
+        <string notr="true">QPushButton { background-color: #FFFFFF; color: #FF7B71; border: 1px solid #FF7B71; border-radius: 8px; }</string>
        </property>
        <property name="text">
-        <string>          结束</string>
+        <string>      结束</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_47">
@@ -9378,6 +9436,62 @@ padding: 0px;</string>
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
+      <widget class="QLabel" name="label_64">
+       <property name="geometry">
+        <rect>
+         <x>1105</x>
+         <y>847</y>
+         <width>14</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>14</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-image: url(:/set/pic/icon_start.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_65">
+       <property name="geometry">
+        <rect>
+         <x>1315</x>
+         <y>846</y>
+         <width>18</width>
+         <height>18</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">border-image: url(:/set/pic/icon_shut_paradigm.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
       <zorder>label_37</zorder>
       <zorder>label_35</zorder>
       <zorder>label_36</zorder>
@@ -9407,6 +9521,8 @@ padding: 0px;</string>
       <zorder>label_5</zorder>
       <zorder>label_train_trial_caption</zorder>
       <zorder>label_train_trial_value</zorder>
+      <zorder>label_64</zorder>
+      <zorder>label_65</zorder>
      </widget>
     </widget>
    </widget>
