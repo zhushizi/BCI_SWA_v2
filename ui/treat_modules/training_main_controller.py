@@ -53,7 +53,7 @@ class TrainingMainController:
 
     框架阶段：只负责 UI 交互 -> TrainingMainApp 的调用入口。
 
-    需要负责显示脑电波形（有效电极通道 + 底部 CH10/CH12/CH14 装饰直线）
+    需要负责显示脑电波形（有效电极通道 + 底部 CH10/CH12/CH14 模拟直线，有脑电数据时显示）
     """
 
     def __init__(
@@ -319,6 +319,7 @@ class TrainingMainController:
         eeg_data = frame.get("eeg_data")
         timestamp = frame.get("timestamp")
         self._wave_widget.update_eeg(eeg_data, timestamp=timestamp)
+        self._refresh_wave_label_panel()
         if self._power_widget:
             power_data = frame.get("power_data") or []
             self._power_widget.update_power(power_data)

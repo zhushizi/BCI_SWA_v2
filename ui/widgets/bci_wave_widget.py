@@ -54,11 +54,12 @@ class BCIWaveWidget(QWidget):
             if label.upper() == "NONE":
                 label = ""
             labels.append(label)
-        labels.extend(self._extra_channel_labels)
+        if self._eeg_data is not None:
+            labels.extend(self._extra_channel_labels)
         return labels
 
     def set_extra_channels(self, labels: list[str]) -> None:
-        """底部装饰通道：仅绘制水平直线，不参与 EEG 数据缓冲。"""
+        """底部模拟通道：有真实脑电数据时绘制水平直线，不参与数据缓冲。"""
         self._extra_channel_labels = [str(item or "").strip() for item in (labels or []) if str(item or "").strip()]
         self.update()
 
@@ -77,26 +78,24 @@ class BCIWaveWidget(QWidget):
         rect = self.rect()
         painter.fillRect(rect, self._bg_color)
 
-        visible_eeg: list[list[float]] = []
-        visible_labels: list[str] = []
-        extra_labels = list(self._extra_channel_labels)
-
-        if self._eeg_data is not None:
-            eeg = self._to_2d_array(self._eeg_data)
-            if eeg is None:
-                if not extra_labels:
-                    painter.setPen(QPen(QColor(180, 180, 180), 1))
-                    painter.drawText(rect, Qt.AlignCenter, "波形格式不支持")
-                    return
-            else:
-                visible_eeg, visible_labels = self._filter_channels(eeg)
-        elif not extra_labels:
+        if self._eeg_data is None:
             painter.setPen(QPen(QColor(180, 180, 180), 1))
             painter.drawText(rect, Qt.AlignCenter, "暂无波形数据")
             return
 
+        eeg = self._to_2d_array(self._eeg_data)
+        if eeg is None:
+            painter.setPen(QPen(QColor(180, 180, 180), 1))
+            painter.drawText(rect, Qt.AlignCenter, "波形格式不支持")
+            return
+
+        visible_eeg, visible_labels = self._filter_channels(eeg)
+        extra_labels = list(self._extra_channel_labels)
+
         n_chan = len(visible_eeg) + len(extra_labels)
         if n_chan <= 0:
+            painter.setPen(QPen(QColor(180, 180, 180), 1))
+            painter.drawText(rect, Qt.AlignCenter, "暂无波形数据")
             return
 
         width = rect.width()
@@ -142,8 +141,7 @@ class BCIWaveWidget(QWidget):
                 painter.setPen(self._label_color)
                 painter.drawText(6, int(y_offset - channel_height * 0.3), label)
             painter.setPen(QPen(self._wave_color, 1))
-            y_mid = int(y_offset)
-            painter.drawLine(0, y_mid, width, y_mid)
+            painter.drawLine(0, int(y_offset), width, int(y_offset))
 
     def _downsample(self, samples: list[float], max_points: int) -> list[float]:
         if len(samples) <= max_points:
