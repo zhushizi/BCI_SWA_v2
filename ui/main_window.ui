@@ -144,6 +144,9 @@
      <height>16</height>
     </size>
    </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
    <property name="styleSheet">
     <string notr="true">QLabel#label_pingpong {
  background: transparent;
@@ -158,9 +161,6 @@ QLabel#label_pingpong:hover {
    </property>
    <property name="text">
     <string/>
-   </property>
-   <property name="autoFillBackground">
-    <bool>false</bool>
    </property>
   </widget>
   <widget class="QLabel" name="label_wifi">
@@ -184,6 +184,9 @@ QLabel#label_pingpong:hover {
      <height>17</height>
     </size>
    </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
    <property name="styleSheet">
     <string notr="true">QLabel#label_wifi {
  background: transparent;
@@ -198,9 +201,6 @@ QLabel#label_wifi:hover {
    </property>
    <property name="text">
     <string/>
-   </property>
-   <property name="autoFillBackground">
-    <bool>false</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_quit">
@@ -3021,7 +3021,7 @@ border-color: #C7D2FE;
          <x>50</x>
          <y>40</y>
          <width>431</width>
-         <height>891</height>
+         <height>901</height>
         </rect>
        </property>
       </widget>

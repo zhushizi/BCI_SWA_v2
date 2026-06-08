@@ -139,7 +139,8 @@ class PatientSelectPanel(QWidget):
     patient_selected = Signal(dict)
     PAGE_SIZE = 10
     CARD_HEIGHT = 68
-    CARD_SPACING = 8
+    CARD_SPACING = 6
+    LIST_BOTTOM_PADDING = 2
 
     def __init__(self, patient_app=None, parent: Optional[QWidget] = None, logger: Optional[logging.Logger] = None) -> None:
         super().__init__(parent)
@@ -248,7 +249,7 @@ class PatientSelectPanel(QWidget):
         self._list_widget = QWidget(self)
         self._list_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._list_layout = QVBoxLayout(self._list_widget)
-        self._list_layout.setContentsMargins(0, 0, 0, 0)
+        self._list_layout.setContentsMargins(0, 0, 0, self.LIST_BOTTOM_PADDING)
         self._list_layout.setSpacing(0)
 
         root_layout.addWidget(self._list_widget, 1)

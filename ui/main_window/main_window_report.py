@@ -112,7 +112,7 @@ class ReportPatientsPanel(QWidget):
 
         root_layout = QVBoxLayout(self)
         root_layout.setContentsMargins(16, 16, 16, 16)
-        root_layout.setSpacing(12)
+        root_layout.setSpacing(10)
 
         top_bar = QHBoxLayout()
         top_bar.setContentsMargins(0, 0, 0, 0)
