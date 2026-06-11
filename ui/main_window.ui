@@ -377,7 +377,7 @@ QTabWidget#tabWidget QTabBar::tab {
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>4</number>
+      <number>0</number>
      </property>
      <property name="tabBarAutoHide">
       <bool>false</bool>
@@ -3326,7 +3326,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       <string notr="true"/>
      </property>
      <property name="text">
-      <string>电刺激强度适应性测试</string>
+      <string>电刺激强度测试</string>
      </property>
     </widget>
     <widget class="QTabWidget" name="tabWidget_2">

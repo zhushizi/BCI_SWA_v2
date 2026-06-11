@@ -757,10 +757,13 @@ class MainWindowTreatFlow:
         self.update_title_to_practising()
 
     def update_title_to_practising(self) -> None:
-        label_title = get_ui_attr(self.ui, "label_title")
-        if label_title is None:
+        nav = getattr(getattr(self._host, "treat_controller", None), "_nav", None)
+        if nav is not None:
+            nav.sync_preprocess_title_by_sub_tab()
             return
-        label_title.setText("训练中")
+        label_title = get_ui_attr(self.ui, "label_title")
+        if label_title is not None:
+            label_title.setText("训练中")
 
 
 class _HoverShadowFilter(QObject):

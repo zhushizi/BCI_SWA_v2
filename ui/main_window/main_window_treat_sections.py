@@ -17,6 +17,12 @@ from ui.widgets.slider_widget import SliderWidget
 from ui.widgets.threshold_stepper_widget import ThresholdStepperWidget
 from service.business.hardware.dd_ack_retry import DdAckRetrySender
 
+_SUB_TAB_LABEL_TITLES = {
+    "tab_3": "电刺激强度测试",
+    "tab_4": "阻抗检测",
+    "tab_5": "训练中",
+}
+
 
 class TreatWsBridge:
     def __init__(self, host):
@@ -1146,6 +1152,11 @@ class TreatNavigation:
 
     def sync_preprocess_title_by_sub_tab(self) -> None:
         tab_name = self._get_current_sub_tab_name()
+
+        title = _SUB_TAB_LABEL_TITLES.get(tab_name)
+        if title:
+            label_title = get_ui_attr(self.ui, "label_title")
+            safe_call(self._logger, getattr(label_title, "setText", None), title)
 
         if tab_name == "tab_6":
             # 每次进入评估页都重置 UI：清空 Alpha/结果、重置滚轮与按钮状态
