@@ -294,7 +294,7 @@ QTabWidget#tabWidget_main QTabBar::tab {
 }</string>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -3326,7 +3326,7 @@ border-image: url(:/main/pic/main_patient_off.png);</string>
       <string notr="true"/>
      </property>
      <property name="text">
-      <string>电刺激强度测试</string>
+      <string>电刺激强度适应性测试</string>
      </property>
     </widget>
     <widget class="QTabWidget" name="tabWidget_2">

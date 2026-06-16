@@ -49,7 +49,7 @@ class ImpedanceTestController:
         """离开阻抗页（占位）。"""
         return
 
-    # ---------- 阻抗检测 ----------
+    # ---------- 脑阻抗检测 ----------
     def _open_impedance_mode(self) -> None:
         if self.impedance_app:
             safe_call(self._logger, self.impedance_app.start, self._current_patient_id)

@@ -38,13 +38,13 @@ class HardwareConfigApp:
     def get_nes_port(self) -> Optional[str]:
         return str(self._config_app.get("NES_port") or "").strip() or None
 
-    def set_decoder_port(self, port: str) -> bool:
+    def set_decoder_port(self, port: str, *, reconnect: bool = True) -> bool:
         next_port = str(port or "").strip()
         if not next_port:
             return False
         if not self._config_app.set("decoder_port", next_port):
             return False
-        if self._decoder_app:
+        if reconnect and self._decoder_app:
             try:
                 return bool(self._decoder_app.restart(next_port))
             except Exception as exc:
@@ -52,13 +52,13 @@ class HardwareConfigApp:
                 return False
         return True
 
-    def set_nes_port(self, port: str) -> bool:
+    def set_nes_port(self, port: str, *, reconnect: bool = True) -> bool:
         next_port = str(port or "").strip()
         if not next_port:
             return False
         if not self._config_app.set("NES_port", next_port):
             return False
-        if self._hardware_app:
+        if reconnect and self._hardware_app:
             try:
                 return bool(self._hardware_app.set_nes_port(next_port))
             except Exception as exc:

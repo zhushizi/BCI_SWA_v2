@@ -1,7 +1,7 @@
 {
     "db_write_log_enabled": false,
     "NES_port": "COM2",
-    "decoder_port": "COM4",
+    "decoder_port": "COM17",
     "ws_url": "ws://127.0.0.1:8080",
     "log_receive_enabled": false,
     "ws_enable_heartbeat": false,

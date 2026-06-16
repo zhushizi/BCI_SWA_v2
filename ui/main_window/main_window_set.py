@@ -39,9 +39,9 @@ class SetPageController:
 
     def bind_signals(self):
         combo = get_ui_attr(self.ui, "comboBox_decoder_port")
-        safe_connect(self.logger, getattr(combo, "currentTextChanged", None), self._on_decoder_port_changed)
+        safe_connect(self.logger, getattr(combo, "currentIndexChanged", None), self._on_decoder_port_index_changed)
         nes_combo = get_ui_attr(self.ui, "comboBox_NES_port")
-        safe_connect(self.logger, getattr(nes_combo, "currentTextChanged", None), self._on_nes_port_changed)
+        safe_connect(self.logger, getattr(nes_combo, "currentIndexChanged", None), self._on_nes_port_index_changed)
         slider = get_ui_attr(self.ui, "horizontalSlider_volume")
         if slider is None:
             self.logger.warning("未找到音量滑条: horizontalSlider_volume")
@@ -70,22 +70,20 @@ class SetPageController:
         detected_decoder_port, detected_nes_port, display_ports = self._build_detected_port_displays()
 
         # 规则优先：CH340 -> 电刺激设备(NES)；串行设备 -> 头环(decoder)
-        if detected_decoder_port:
-            self.decoder_port = detected_decoder_port
-        if detected_nes_port:
-            self.nes_port = detected_nes_port
+        selected_decoder_port = detected_decoder_port or self.decoder_port
+        selected_nes_port = detected_nes_port or self.nes_port
 
         if combo:
             prev_block = combo.blockSignals(True)
             ports = list(display_ports)
-            if self.decoder_port and self.decoder_port not in ports:
-                ports.insert(0, self.decoder_port)
+            if selected_decoder_port and selected_decoder_port not in ports:
+                ports.insert(0, selected_decoder_port)
             combo.clear()
             if ports:
                 for port in ports:
-                    combo.addItem(self._format_decoder_display(port), port)
-            if self.decoder_port:
-                idx = combo.findData(self.decoder_port)
+                    combo.addItem(self._format_decoder_display(port, selected_decoder_port), port)
+            if selected_decoder_port:
+                idx = combo.findData(selected_decoder_port)
                 if idx >= 0:
                     combo.setCurrentIndex(idx)
             combo.blockSignals(prev_block)
@@ -93,23 +91,23 @@ class SetPageController:
         if nes_combo:
             prev_block = nes_combo.blockSignals(True)
             nes_ports = list(display_ports)
-            if self.nes_port and self.nes_port not in nes_ports:
-                nes_ports.insert(0, self.nes_port)
+            if selected_nes_port and selected_nes_port not in nes_ports:
+                nes_ports.insert(0, selected_nes_port)
             nes_combo.clear()
             if nes_ports:
                 for port in nes_ports:
-                    nes_combo.addItem(self._format_nes_display(port), port)
-            if self.nes_port:
-                idx = nes_combo.findData(self.nes_port)
+                    nes_combo.addItem(self._format_nes_display(port, selected_nes_port), port)
+            if selected_nes_port:
+                idx = nes_combo.findData(selected_nes_port)
                 if idx >= 0:
                     nes_combo.setCurrentIndex(idx)
             nes_combo.blockSignals(prev_block)
 
-        # 自动连接到识别出的对应设备串口
-        if detected_decoder_port:
-            self._on_decoder_port_changed(detected_decoder_port)
-        if detected_nes_port:
-            self._on_nes_port_changed(detected_nes_port)
+        # 自动连接到识别出的对应设备串口，并写回 config.json
+        if selected_decoder_port:
+            self._apply_decoder_port(selected_decoder_port, reconnect=bool(detected_decoder_port))
+        if selected_nes_port:
+            self._apply_nes_port(selected_nes_port, reconnect=bool(detected_nes_port))
         self._init_volume_controls()
         self._init_account_controls()
 
@@ -262,29 +260,49 @@ class SetPageController:
         step = slider.singleStep() or 5
         slider.setValue(max(slider.minimum(), slider.value() - step))
 
-    def _on_decoder_port_changed(self, text: str) -> None:
-        next_port = self._extract_port_device(text)
-        if not next_port:
-            return
-        if self.decoder_port == next_port:
-            return
-        self.decoder_port = next_port
-        if self.hardware_config_app:
-            ok = self.hardware_config_app.set_decoder_port(next_port)
-            if not ok:
-                self.logger.warning("切换解码器端口失败: %s", next_port)
+    def _port_from_combo(self, combo, index: int) -> str:
+        if combo is None or index < 0:
+            return ""
+        data = combo.itemData(index)
+        if data is not None:
+            return self._extract_port_device(str(data))
+        return self._extract_port_device(combo.itemText(index))
 
-    def _on_nes_port_changed(self, text: str) -> None:
-        next_port = self._extract_port_device(text)
+    def _on_decoder_port_index_changed(self, index: int) -> None:
+        combo = get_ui_attr(self.ui, "comboBox_decoder_port")
+        next_port = self._port_from_combo(combo, index)
+        if next_port:
+            self._apply_decoder_port(next_port, reconnect=True)
+
+    def _on_nes_port_index_changed(self, index: int) -> None:
+        nes_combo = get_ui_attr(self.ui, "comboBox_NES_port")
+        next_port = self._port_from_combo(nes_combo, index)
+        if next_port:
+            self._apply_nes_port(next_port, reconnect=True)
+
+    def _apply_decoder_port(self, next_port: str, *, reconnect: bool) -> None:
+        next_port = self._extract_port_device(next_port)
         if not next_port:
             return
-        if self.nes_port == next_port:
+        port_changed = self.decoder_port != next_port
+        self.decoder_port = next_port
+        if not self.hardware_config_app:
             return
+        ok = self.hardware_config_app.set_decoder_port(next_port, reconnect=reconnect and port_changed)
+        if not ok:
+            self.logger.warning("切换解码器端口失败: %s", next_port)
+
+    def _apply_nes_port(self, next_port: str, *, reconnect: bool) -> None:
+        next_port = self._extract_port_device(next_port)
+        if not next_port:
+            return
+        port_changed = self.nes_port != next_port
         self.nes_port = next_port
-        if self.hardware_config_app:
-            ok = self.hardware_config_app.set_nes_port(next_port)
-            if not ok:
-                self.logger.warning("切换串口失败: %s", next_port)
+        if not self.hardware_config_app:
+            return
+        ok = self.hardware_config_app.set_nes_port(next_port, reconnect=reconnect and port_changed)
+        if not ok:
+            self.logger.warning("切换串口失败: %s", next_port)
 
     def _init_account_controls(self) -> None:
         """密码相关输入框统一使用掩码显示，避免明文输入。"""
@@ -427,14 +445,16 @@ class SetPageController:
 
         return detected_decoder_port, detected_nes_port, ports
 
-    def _format_decoder_display(self, port: str) -> str:
+    def _format_decoder_display(self, port: str, active_port: Optional[str] = None) -> str:
         target = self._extract_port_device(port)
-        if target and self.decoder_port and target == self.decoder_port:
+        active = active_port if active_port is not None else self.decoder_port
+        if target and active and target == active:
             return f"{target}（头环）"
         return target or str(port or "").strip()
 
-    def _format_nes_display(self, port: str) -> str:
+    def _format_nes_display(self, port: str, active_port: Optional[str] = None) -> str:
         target = self._extract_port_device(port)
-        if target and self.nes_port and target == self.nes_port:
+        active = active_port if active_port is not None else self.nes_port
+        if target and active and target == active:
             return f"{target}（电刺激设备）"
         return target or str(port or "").strip()

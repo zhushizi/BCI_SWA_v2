@@ -19,7 +19,7 @@ from service.business.hardware.dd_ack_retry import DdAckRetrySender
 
 _SUB_TAB_LABEL_TITLES = {
     "tab_3": "电刺激强度测试",
-    "tab_4": "阻抗检测",
+    "tab_4": "脑阻抗检测",
     "tab_5": "训练中",
 }
 
@@ -56,7 +56,7 @@ class TreatWsBridge:
         try:
             self._host.impedance_ctrl.stop_impedance()
         except Exception:
-            self._logger.exception("关闭阻抗检测失败")
+            self._logger.exception("关闭脑阻抗检测失败")
         self.send_impedance_close()
 
 

@@ -168,11 +168,11 @@ class TreatPageController:
         self._nav.on_preprocess_return()
 
     def _send_impedance_close_and_start_training(self) -> None:
-        """从阻抗页返回时：关闭阻抗检测"""
+        """从阻抗页返回时：关闭脑阻抗检测"""
         self._ws_bridge.close_impedance_mode()
 
     def _send_impedance_open(self) -> None:
-        """从训练页返回阻抗页时：开启阻抗检测"""
+        """从训练页返回阻抗页时：开启脑阻抗检测"""
         self._ws_bridge.send_impedance_open()
 
     def _on_main_tab_changed(self, index: int) -> None:
