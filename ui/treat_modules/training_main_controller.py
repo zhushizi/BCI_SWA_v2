@@ -499,6 +499,10 @@ class TrainingMainController:
             return True
         return not self._countdown_timer.isActive()
 
+    def is_training_mode_active(self) -> bool:
+        """用户已启动训练（含暂停态，仍属训练 session）。"""
+        return bool(self._user_started_training)
+
     def _on_start_stop_clicked(self) -> None:
         """开始/暂停按钮直接控制倒计时：点击开始 -> 开始计时；点击暂停 -> 暂停计时。不再依赖 paradigm.start_decoding / paradigm.Stage。"""
         start_stop_btn = get_ui_attr(self.ui, "pushButton_start_stop")

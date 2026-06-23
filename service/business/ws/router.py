@@ -11,7 +11,7 @@ WebSocket(JSON-RPC) 消息路由（服务层）。
 - decoder.ready：仅记录 params，并更新 ws.decoder_ready/decoder_info（保持兼容）
 - decoder.session_info：记录 params，并更新 ws.decoder_session_info（保持兼容）；日志仅输出摘要避免刷屏
 - system.ping：被动回 pong（可按需关闭/扩展）
-- paradigm.action_command：按动作指令下发治疗命令/数据帧，收到 Treat_OK 后回 main.exo_action_complete
+- paradigm.action_command：按动作指令下发治疗命令/数据帧，收到 Treat_OK 后回 main.exo_action_complete；训练模式下超时未收到则主动回 complete
 """
 
 import logging
@@ -25,7 +25,7 @@ from service.business.ws.handlers import (
     SerialHandler,
     StopSessionHandler,
 )
-from service.business.ws.utils import load_countdown_minutes
+from service.business.ws.utils import load_countdown_minutes, load_treat_ok_timeout_sec
 
 if TYPE_CHECKING:
     from infrastructure.hardware.serial_hardware import SerialHardware
@@ -64,8 +64,17 @@ class WsMessageRouter:
         self._on_decoder_ready: Optional[Callable[[Dict[str, Any]], None]] = None
         self._on_decoder_session_info: Optional[Callable[[Dict[str, Any]], None]] = None
         self._on_system_ping: Optional[Callable[[Dict[str, Any]], Optional[Dict[str, Any]]]] = None
+        self._is_training_mode: Callable[[], bool] = lambda: False
         self._pending_action_store = PendingActionStore()
         self._serial_callback_registered = False
+        self._serial_handler = SerialHandler(
+            ws=self.ws,
+            logger=self.logger,
+            pending_action_store=self._pending_action_store,
+            treat_ok_token=self.TOKEN_TREAT_OK,
+            treat_ok_timeout_sec=load_treat_ok_timeout_sec(),
+            is_training_mode=lambda: self._is_training_mode(),
+        )
         self._paradigm_handler = ParadigmHandler(
             logger=self.logger,
             on_action_command=self._handle_action_command,
@@ -74,12 +83,7 @@ class WsMessageRouter:
             action_right=self.ACTION_RIGHT,
             channel_left=self.CHANNEL_LEFT,
             channel_right=self.CHANNEL_RIGHT,
-        )
-        self._serial_handler = SerialHandler(
-            ws=self.ws,
-            logger=self.logger,
-            pending_action_store=self._pending_action_store,
-            treat_ok_token=self.TOKEN_TREAT_OK,
+            on_pending_action_set=self._serial_handler.schedule_treat_ok_fallback,
         )
         self._stop_session_handler = StopSessionHandler(
             logger=self.logger,
@@ -113,6 +117,9 @@ class WsMessageRouter:
 
     def set_on_system_ping(self, handler: Callable[[Dict[str, Any]], Optional[Dict[str, Any]]]) -> None:
         self._on_system_ping = handler
+
+    def set_training_mode_checker(self, checker: Callable[[], bool]) -> None:
+        self._is_training_mode = checker
 
     def set_stim_service(self, stim_service: "StimTestService") -> None:
         self.stim_service = stim_service

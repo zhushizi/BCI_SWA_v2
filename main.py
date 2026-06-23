@@ -378,6 +378,15 @@ def create_main_window(
     safe_call(apps.training_main_app.set_wave_callback, main_window.eeg_frame_received.emit)
     safe_call(apps.training_main_app.set_intent_callback, main_window.intent_result_received.emit)
 
+    def _is_training_mode_active() -> bool:
+        try:
+            ctrl = main_window.treat_controller.training_main_ctrl
+            return bool(ctrl.is_training_mode_active())
+        except Exception:
+            return False
+
+    safe_call(services.ws_router.set_training_mode_checker, _is_training_mode_active)
+
     if sub_window:
         # 主窗销毁时，确保副屏同步关闭
         safe_call(main_window.destroyed.connect, lambda _=None: sub_window.close())
